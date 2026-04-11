@@ -1,5 +1,5 @@
 ---
-name: ac-review-and-fix
+name: review-and-fix
 description: >-
   Review open pull requests for bugs, compliance violations, and design issues — then fix what's clear and escalate what needs a decision.
   Make sure to use this skill whenever the user asks to review PRs, check open PRs, do a code review with fixes,

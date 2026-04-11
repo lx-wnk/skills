@@ -7,7 +7,6 @@ Curated skills for AI coding agents, distributed via [skills.sh](https://skills.
 - Every skill lives in `skills/<skill-name>/SKILL.md`
 - Skills follow the SKILL.md format: YAML frontmatter + Markdown instructions
 - Formatting: Prettier (`npm run prettier:fix`)
-- Skill names use the `ac-` prefix as namespace
 
 ## SKILL.md Format
 
