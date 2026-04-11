@@ -1,0 +1,11 @@
+{
+  "name": "ac-skills",
+  "private": true,
+  "scripts": {
+    "prettier": "prettier --check .",
+    "prettier:fix": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "^3.0.0"
+  }
+}
