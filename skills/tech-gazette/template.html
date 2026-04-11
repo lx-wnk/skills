@@ -1,0 +1,229 @@
+<!-- Tech Gazette HTML Structure Reference -->
+<!-- Use these EXACT classes and structures. Do NOT invent your own. -->
+
+<!-- MASTHEAD -->
+<div class="masthead">
+  <div class="masthead-date">Datum · KW XX · 2026</div>
+  <h1>The Tech Gazette</h1>
+  <div class="masthead-tagline">Weekly Tech Intelligence for Software Architects</div>
+</div>
+
+<!-- EDITION BAR -->
+<div class="edition-bar">
+  <span>Ausgabe XX/2026</span>
+  <span>18 Topics · XX Artikel</span>
+  <span>Redaktionsschluss: Datum</span>
+</div>
+
+<!-- TICKER (only CRITICAL items) -->
+<div class="ticker">
+  <span class="ticker-label">Eilmeldung</span>
+  <span class="ticker-item"><span class="ticker-kw">KW XX</span> Ticker text here</span>
+</div>
+
+<!-- CUSTOMER RADAR (directly after ticker, only if customers provided) -->
+<div class="customer-radar">
+  <div class="customer-radar-header">Kunden-Radar</div>
+  <div class="customer-cards">
+    <div class="customer-card">
+      <div class="customer-card-header">
+        <div>
+          <div class="customer-name">example.de</div>
+          <div class="customer-subtitle">Shopware 6.6 · PHP 8.2 · ScaleCommerce · Adyen</div>
+        </div>
+        <span class="status-ok">🟢 Alles OK</span>
+        <!-- or: status-action "🟡 Action nötig" / status-urgent "🔴 Dringend" -->
+      </div>
+      <div class="card-section-header">Marktüberblick</div>
+      <div class="market-overview">
+        <div class="market-stat">
+          <span class="market-stat-value">7 Mrd €</span>
+          <span class="market-stat-label">Umsatz</span>
+          <span class="market-stat-trend trend-up">+3%</span>
+          <!-- or: trend-down -->
+        </div>
+      </div>
+      <div class="card-section-header">Wettbewerber</div>
+      <table class="competitor-table">
+        <tr>
+          <th>Wettbewerber</th>
+          <th>Positionierung</th>
+        </tr>
+        <tr>
+          <td>competitor.de</td>
+          <td>Details</td>
+        </tr>
+      </table>
+      <div class="card-section-header">Top 3 Shop-Findings</div>
+      <ol class="findings-list">
+        <li class="finding-item">
+          <span class="finding-number">1</span>
+          <div class="finding-content">
+            <div class="finding-title">Finding Title <span class="sentiment-positiv">Positiv</span></div>
+            <!-- sentiment classes: sentiment-positiv, sentiment-negativ, sentiment-neutral, sentiment-gemischt, sentiment-ausbaufaehig -->
+            <div class="finding-text">Description of the finding.</div>
+          </div>
+        </li>
+      </ol>
+      <div class="card-section-header">Betroffene Gazette-Meldungen</div>
+      <ul class="affected-articles">
+        <li><span class="badge badge-update">UPDATE</span> Referenced article title</li>
+      </ul>
+      <div class="card-section-header">Branchen-Prios 2026</div>
+      <ol class="branchen-prios">
+        <li class="branchen-prio">Priority item</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<!-- HERO ARTICLE -->
+<div class="hero">
+  <div class="hero-meta">
+    <span class="kw-tag current">KW XX</span>
+    <span class="badge badge-wichtig">WICHTIG</span>
+    <span class="tag tag-shopware">Shopware</span>
+  </div>
+  <h2>Hero Headline</h2>
+  <div class="lead">
+    <p>Two-column lead text. Use column-count: 2 via the .lead class.</p>
+  </div>
+  <div class="meta">Quelle: <a href="URL" target="_blank">Source Title</a></div>
+</div>
+
+<!-- PRIORITY 1: THREE-COL GRID -->
+<div class="three-col">
+  <div>
+    <div class="section-header">Shopware</div>
+    <!-- articles here -->
+  </div>
+  <div class="grid-divider"></div>
+  <div>
+    <div class="section-header">Shopify</div>
+    <!-- articles here -->
+  </div>
+  <div class="grid-divider"></div>
+  <div>
+    <div class="section-header">PHP & Composer</div>
+    <!-- articles here -->
+  </div>
+</div>
+
+<!-- MONATS-KONTEXT -->
+<div class="monats-kontext">
+  <div class="monats-kontext-header">Monats-Kontext · April 2026</div>
+  <div class="item"><span class="kw-tag context">KW XX</span> Context item text</div>
+</div>
+
+<!-- LAYOUT A: 2|8|2 -->
+<div class="row">
+  <div class="col-2 col-sidebar">
+    <div class="sidebar-note"><strong>Tipp</strong>Sidebar text</div>
+  </div>
+  <div class="col-8 col-content">
+    <div class="section-header">Topic Name</div>
+    <div class="article">
+      <div class="article-tags">
+        <span class="kw-tag current">KW XX</span>
+        <span class="badge badge-wichtig">WICHTIG</span>
+        <span class="tag tag-shopware">Shopware</span>
+      </div>
+      <h3>Article Headline</h3>
+      <p>2-4 sentences with concrete version numbers and dates.</p>
+      <div class="meta">Quelle: <a href="URL" target="_blank">Source</a></div>
+    </div>
+  </div>
+  <div class="col-2 col-sidebar-alt">
+    <div class="sidebar-note"><strong>Hinweis</strong>Sidebar text</div>
+  </div>
+</div>
+
+<!-- LAYOUT B: 2|10 -->
+<div class="row">
+  <div class="col-2 col-sidebar">
+    <div class="sidebar-note"><strong>Tipp</strong>Text</div>
+  </div>
+  <div class="col-10 col-content">
+    <div class="section-header">Topic Name</div>
+    <!-- articles -->
+  </div>
+</div>
+
+<!-- LAYOUT C: 10|2 -->
+<div class="row">
+  <div class="col-10 col-content">
+    <div class="section-header">Topic Name</div>
+    <!-- articles -->
+  </div>
+  <div class="col-2 col-sidebar-alt">
+    <div class="sidebar-note"><strong>Hinweis</strong>Text</div>
+  </div>
+</div>
+
+<!-- LAYOUT D: 2|4|4|2 -->
+<div class="row">
+  <div class="col-2 col-sidebar">
+    <div class="sidebar-note"><strong>Tipp</strong>Text</div>
+  </div>
+  <div class="col-4 col-content">
+    <div class="section-header">Topic A</div>
+    <!-- articles -->
+  </div>
+  <div class="col-4 col-content" style="border-left: 1px solid #d5cfc5">
+    <div class="section-header">Topic B</div>
+    <!-- articles -->
+  </div>
+  <div class="col-2 col-sidebar-alt">
+    <div class="sidebar-note"><strong>Hinweis</strong>Text</div>
+  </div>
+</div>
+
+<!-- LAYOUT E: 2|5|5 -->
+<div class="row">
+  <div class="col-2 col-sidebar">
+    <div class="sidebar-note"><strong>Tipp</strong>Text</div>
+  </div>
+  <div class="col-5 col-content">
+    <div class="section-header">Topic A</div>
+    <!-- articles -->
+  </div>
+  <div class="col-5 col-content" style="border-left: 1px solid #d5cfc5">
+    <div class="section-header">Topic B</div>
+    <!-- articles -->
+  </div>
+</div>
+
+<!-- LAYOUT F: 12 full-width -->
+<div class="row">
+  <div class="col-12">
+    <div class="highlight-box">
+      <div class="section-header">Topic Name</div>
+      <!-- articles -->
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT G: 2|4|4|2 compact -->
+<div class="row">
+  <div class="col-2 col-sidebar">
+    <div class="sidebar-note"><strong>Tipp</strong>Text</div>
+  </div>
+  <div class="col-4 col-content">
+    <div class="section-header">Topic A</div>
+    <!-- articles -->
+  </div>
+  <div class="col-4 col-content" style="border-left: 1px solid #d5cfc5">
+    <div class="section-header">Topic B</div>
+    <ul class="compact-list">
+      <li><span class="badge badge-update">UPDATE</span> Compact list item text</li>
+    </ul>
+  </div>
+  <div class="col-2 col-sidebar-alt">
+    <div class="sidebar-note"><strong>Hinweis</strong>Text</div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <p>The Tech Gazette · KW XX/2026 · Generiert mit Claude</p>
+</div>
