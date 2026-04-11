@@ -15,6 +15,16 @@ allowed-tools: "Bash(gh *) Bash(curl *) Read Write WebFetch Agent"
 
 Update shared Agent-Context files to the latest version without touching project-owned content.
 
+## Examples
+
+```bash
+# Update to latest version
+/agent-context-update
+
+# Update to a specific version
+/agent-context-update v0.3.0
+```
+
 ## Prerequisites Check
 
 Before starting, verify Agent-Context is installed:

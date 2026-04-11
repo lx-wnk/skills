@@ -31,6 +31,19 @@ digraph review_fix {
 }
 ```
 
+## Examples
+
+```bash
+# Review all open PRs
+/review-and-fix
+
+# Review a specific PR
+/review-and-fix 42
+
+# Review multiple specific PRs
+/review-and-fix 42 57 63
+```
+
 ## Phase 1: Identify PRs
 
 If `$ARGUMENTS` contains PR numbers, use those. Otherwise find all open PRs:

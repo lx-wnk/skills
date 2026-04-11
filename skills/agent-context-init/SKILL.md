@@ -15,6 +15,16 @@ allowed-tools: "Bash(gh *) Bash(curl *) Read Write WebFetch Agent"
 
 Set up the Agent-Context layered architecture in the current project.
 
+## Examples
+
+```bash
+# Initialize with latest version
+/agent-context-init
+
+# Initialize with a specific version
+/agent-context-init v0.2.1
+```
+
 ## Prerequisites Check
 
 Before starting, verify this is a valid target:
