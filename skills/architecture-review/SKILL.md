@@ -40,14 +40,13 @@ Audit structural health: boundaries, dependency direction, layering, ADR drift. 
 
 ## Workflow
 
-```dot
-digraph arch_review {
-  "Parse target mode" -> "Load project context";
-  "Load project context" -> "Collect files in scope";
-  "Collect files in scope" -> "Build dependency map";
-  "Build dependency map" -> "Run checks";
-  "Run checks" -> "Report findings";
-}
+```mermaid
+flowchart TD
+  A["Parse target mode"] --> B["Load project context"]
+  B --> C["Collect files in scope"]
+  C --> D["Build dependency map"]
+  D --> E["Run checks"]
+  E --> F["Report findings"]
 ```
 
 ## Phase 1: Parse Target

@@ -16,19 +16,17 @@ Review open PRs, fix what's clear, escalate what needs a decision.
 
 ## Workflow
 
-```dot
-digraph review_fix {
-  rankdir=TB;
-  "Identify PRs" -> "Parallel review agents";
-  "Parallel review agents" -> "Categorize findings";
-  "Categorize findings" -> "Fix confident issues" [label="sure"];
-  "Categorize findings" -> "Collect design decisions" [label="unsure"];
-  "Fix confident issues" -> "Commit + push";
-  "Collect design decisions" -> "Present options table";
-  "Present options table" -> "Wait for user choice";
-  "Wait for user choice" -> "Implement chosen options";
-  "Implement chosen options" -> "Commit + push";
-}
+```mermaid
+flowchart TD
+  A["Identify PRs"] --> B["Parallel review agents"]
+  B --> C["Categorize findings"]
+  C -->|sure| D["Fix confident issues"]
+  C -->|unsure| E["Collect design decisions"]
+  D --> F["Commit + push"]
+  E --> G["Present options table"]
+  G --> H["Wait for user choice"]
+  H --> I["Implement chosen options"]
+  I --> F
 ```
 
 ## Examples

@@ -40,14 +40,13 @@ Audit class- and method-level design of a scoped target. Report findings — nev
 
 ## Workflow
 
-```dot
-digraph comp_review {
-  "Parse target mode" -> "Load project context";
-  "Load project context" -> "Detect stack + idioms";
-  "Detect stack + idioms" -> "Research current patterns";
-  "Research current patterns" -> "Run checks";
-  "Run checks" -> "Report findings";
-}
+```mermaid
+flowchart TD
+  A["Parse target mode"] --> B["Load project context"]
+  B --> C["Detect stack + idioms"]
+  C --> D["Research current patterns"]
+  D --> E["Run checks"]
+  E --> F["Report findings"]
 ```
 
 ## Phase 1: Parse Target

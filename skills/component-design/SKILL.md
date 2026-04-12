@@ -34,17 +34,16 @@ Design the internals of one module: classes, interfaces, patterns, method contra
 
 ## Workflow
 
-```dot
-digraph comp_design {
-  "Locate target module" -> "Read existing code";
-  "Read existing code" -> "Detect stack + idioms";
-  "Detect stack + idioms" -> "Research framework patterns";
-  "Research framework patterns" -> "Clarify contract with user";
-  "Clarify contract with user" -> "Propose 2-3 designs";
-  "Propose 2-3 designs" -> "User picks design";
-  "User picks design" -> "Write design doc";
-  "Write design doc" -> "Summarize";
-}
+```mermaid
+flowchart TD
+  A["Locate target module"] --> B["Read existing code"]
+  B --> C["Detect stack + idioms"]
+  C --> D["Research framework patterns"]
+  D --> E["Clarify contract with user"]
+  E --> F["Propose 2-3 designs"]
+  F --> G["User picks design"]
+  G --> H["Write design doc"]
+  H --> I["Summarize"]
 ```
 
 ## Phase 1: Locate the Target

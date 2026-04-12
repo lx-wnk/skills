@@ -33,17 +33,16 @@ Produce system-level architecture decisions: bounded contexts, module boundaries
 
 ## Workflow
 
-```dot
-digraph arch_design {
-  "Load project context" -> "Detect stack & conventions";
-  "Detect stack & conventions" -> "Research best practices";
-  "Research best practices" -> "Clarify scope with user";
-  "Clarify scope with user" -> "Propose 2-3 approaches";
-  "Propose 2-3 approaches" -> "User picks approach";
-  "User picks approach" -> "Draft structural design";
-  "Draft structural design" -> "Write ADR if decision is non-obvious";
-  "Write ADR if decision is non-obvious" -> "Summarize + next steps";
-}
+```mermaid
+flowchart TD
+  A["Load project context"] --> B["Detect stack & conventions"]
+  B --> C["Research best practices"]
+  C --> D["Clarify scope with user"]
+  D --> E["Propose 2-3 approaches"]
+  E --> F["User picks approach"]
+  F --> G["Draft structural design"]
+  G --> H["Write ADR if decision is non-obvious"]
+  H --> I["Summarize + next steps"]
 ```
 
 ## Phase 1: Load Project Context
@@ -146,8 +145,6 @@ Skip the ADR for obvious defaults. Template:
 - **<Option C>** — rejected because ...
 ```
 
-If `.agent-context/decisions.json` exists, also append a short entry there.
-
 ## Phase 8: Output Summary
 
 Report in the user's language:
@@ -161,7 +158,7 @@ Report in the user's language:
 
 - **System-level only.** If the user pulls you into class-level detail, recommend `component-design`.
 - **No feature planning.** If the request is about user stories or effort, redirect — not this skill.
-- **Never modify source code.** Write only to `docs/architecture/` and optional `.agent-context/decisions.json`.
+- **Never modify source code.** Write only to `docs/architecture/`.
 - **Respect existing structure.** Don't propose sweeping refactors unrelated to the current goal.
 - **Fallback, don't block.** Missing Agent-Context layers → explore code instead.
 - **Research current docs.** Don't guess framework conventions from memory.
