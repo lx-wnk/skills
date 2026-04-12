@@ -9,7 +9,7 @@ description: >-
   Use this skill for DETAIL DESIGN inside a known module — system-level structure belongs in `architecture-design`.
 user-invocable: true
 argument-hint: "[component or module name, e.g. 'OrderService']"
-allowed-tools: "Bash(git *) Bash(ls *) Bash(find *) Read Glob Grep Write WebFetch"
+allowed-tools: "Bash(git *) Bash(ls *) Read Glob Grep Write WebFetch"
 ---
 
 # Component Design (Detail Level)

@@ -9,7 +9,7 @@ description: >-
   Use this skill for HIGH-LEVEL structural review only — SOLID, class design, and method-level issues belong in `component-review`.
 user-invocable: true
 argument-hint: "[pr <N> | branch <name> | namespace <path> | leave empty for whole project]"
-allowed-tools: "Bash(gh *) Bash(git *) Bash(ls *) Bash(find *) Read Glob Grep WebFetch"
+allowed-tools: "Bash(gh *) Bash(git *) Bash(ls *) Read Glob Grep WebFetch"
 ---
 
 # Architecture Review (System Level)
@@ -54,8 +54,8 @@ digraph arch_review {
 
 From `$ARGUMENTS`:
 
-- `pr <N>` → `gh pr diff <N>`, `gh pr view <N> --json headRefName,files`
-- `branch <name>` → `git diff main...<name>`, `git ls-tree -r <name>`
+- `pr <N>` → `gh pr diff <N>`, `gh pr view <N> --json headRefName,files`, read full file context via `git show <branch>:<file>`
+- `branch <name>` → `git diff main...<name>`, `git ls-tree -r <name>`, read files via `git show <branch>:<file>`
 - `namespace <path>` → recursively read files under `<path>`
 - empty → full-project review (sample entry points + top-level modules)
 

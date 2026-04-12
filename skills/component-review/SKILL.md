@@ -9,7 +9,7 @@ description: >-
   Use this skill for DETAIL REVIEW only — module boundaries and dependency structure belong in `architecture-review`.
 user-invocable: true
 argument-hint: "[pr <N> | branch <name> | namespace <path> | leave empty for current changes]"
-allowed-tools: "Bash(gh *) Bash(git *) Bash(ls *) Bash(find *) Read Glob Grep WebFetch"
+allowed-tools: "Bash(gh *) Bash(git *) Bash(ls *) Read Glob Grep WebFetch"
 ---
 
 # Component Review (Detail Level)
@@ -42,8 +42,8 @@ Audit class- and method-level design of a scoped target. Report findings — nev
 
 ```dot
 digraph comp_review {
-  "Parse target mode" -> "Collect files in scope";
-  "Collect files in scope" -> "Detect stack + idioms";
+  "Parse target mode" -> "Load project context";
+  "Load project context" -> "Detect stack + idioms";
   "Detect stack + idioms" -> "Research current patterns";
   "Research current patterns" -> "Run checks";
   "Run checks" -> "Report findings";
@@ -59,13 +59,25 @@ From `$ARGUMENTS`:
 - `namespace <path>` → recursive read under `<path>`
 - empty → `git diff HEAD` for uncommitted changes
 
-## Phase 2: Detect Stack & Idioms
+## Phase 2: Load Project Context
+
+Check in order, stop at first hit:
+
+1. `.agent-context/layer1-bootstrap.md`, `layer2-project-core.md`
+2. `.agent-context/decisions.json` → ADRs that constrain class design
+3. `docs/architecture/**/*.md`
+4. `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`
+5. Manifest files for stack detection
+
+Never block on missing context — infer from surrounding code.
+
+## Phase 3: Detect Stack & Idioms
 
 - Language, framework, version from manifests
 - Existing patterns in surrounding files — the review baseline is the codebase's own conventions, not abstract ideals
 - Read nearby tests to understand the real contract
 
-## Phase 3: Research Current Best Practices
+## Phase 4: Research Current Best Practices
 
 Use `WebFetch` or Context7 for version-sensitive rules:
 
@@ -74,7 +86,7 @@ Use `WebFetch` or Context7 for version-sensitive rules:
 
 Don't apply generic OO dogma if the ecosystem has moved on.
 
-## Phase 4: Checks
+## Phase 5: Checks
 
 Run each relevant check and record findings with `file:line`:
 
@@ -133,7 +145,7 @@ Run each relevant check and record findings with `file:line`:
 
 - Names that reveal the wrong abstraction (`OrderManager`, `UserUtil`, `DataHelper`) → symptom of unclear responsibility
 
-## Phase 5: Report
+## Phase 6: Report
 
 Output in the user's language:
 

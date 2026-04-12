@@ -8,7 +8,7 @@ description: >-
   Use this skill for HIGH-LEVEL structural decisions only — component and class-level design belongs in `component-design`.
 user-invocable: true
 argument-hint: "[short topic, e.g. 'order fulfillment module']"
-allowed-tools: "Bash(git *) Bash(ls *) Bash(find *) Read Glob Grep Write WebFetch"
+allowed-tools: "Bash(git *) Bash(ls *) Read Glob Grep Write WebFetch"
 ---
 
 # Architecture Design (System Level)
