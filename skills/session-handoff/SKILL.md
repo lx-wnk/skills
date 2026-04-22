@@ -10,7 +10,7 @@ description: >-
   "wrap up", "end of session", "session summary".
 user-invocable: true
 argument-hint: "[optionale Notizen oder Fokusthemen, z.B. 'Fokus: Auth-Refactoring']"
-allowed-tools: "Bash(git *) Bash(date) Read Write Edit"
+allowed-tools: "Bash(git *) Bash(date) Bash(basename) Bash(head) Read Write Edit"
 ---
 
 # Session Handoff
@@ -46,10 +46,10 @@ basename "$(git rev-parse --show-toplevel)"
 # Heuristik: "letzte 8 Stunden" ist nur ein Fallback — bevorzuge den Konversationskontext,
 # um die Session-Grenze zu bestimmen. Falls $ARGUMENTS einen Zeithinweis enthält
 # (z.B. "seit Montag", "letzte 2 Tage"), nutze diesen stattdessen.
-git log --oneline --since="8 hours ago" 2>/dev/null || git log --oneline -20
+RECENT=$(git log --oneline --since="8 hours ago" 2>/dev/null); [ -n "$RECENT" ] && echo "$RECENT" || git log --oneline -20
 
-# Zuletzt geänderte Dateien (von erstem Commit bis HEAD)
-git diff --name-only "$(git rev-list --max-parents=0 HEAD)" HEAD 2>/dev/null
+# Zuletzt geänderte Dateien (Session-Fenster, passend zur 8-Stunden-Heuristik)
+git diff --name-only "@{8 hours ago}" HEAD 2>/dev/null || git diff --name-only "HEAD~20" HEAD 2>/dev/null
 
 # Aktuell offene / uncommittete Änderungen
 git status --short
