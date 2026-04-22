@@ -159,7 +159,14 @@ Schritte und beim Formulieren der Entscheidungen.
 ## Schritt 3: .gitignore prüfen
 
 Prüfe mit `Read`, ob `.gitignore` im Repo-Root existiert und ob `HANDOFF.md` bereits eingetragen ist.
-Falls der Eintrag fehlt, füge ihn mit `Edit` hinzu.
+Falls der Eintrag fehlt: Prüfe zuerst, ob die Datei bereits getrackt wird:
+
+```bash
+git ls-files --error-unmatch HANDOFF.md 2>/dev/null && echo "tracked"
+```
+
+- Gibt es **"tracked"** aus → Datei ist bereits committed. Füge `HANDOFF.md` **nicht** zu `.gitignore` hinzu und informiere den Nutzer.
+- Gibt es nichts aus → Datei ist untracked. Füge `HANDOFF.md` per `Edit` zu `.gitignore` hinzu.
 
 ## Schritt 4: Bestätigung
 
