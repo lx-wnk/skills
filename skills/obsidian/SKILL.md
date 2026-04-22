@@ -37,9 +37,16 @@ If something gets written to CLAUDE.md or project documentation, consider whethe
 
 - **URL:** `$OBSIDIAN_BASE_URL`
 - **Auth:** `$OBSIDIAN_API_KEY`
-- **Root folder:** `$OBSIDIAN_ROOT` (default: `claude-memory`, set in `.env`)
+- **Root folder:** `$OBSIDIAN_ROOT` (default: `claude-memory`)
 - **SSL:** self-signed cert → always use `curl -sk`
 - **Default subfolders:** `private/`, `work/`, `misc/`
+
+> **Setup:** Add these vars to `~/.claude/settings.json` under the `"env"` key — **not** to
+> `~/.claude/settings.local.json` (that path is not a recognized Claude Code settings scope and is silently ignored):
+>
+> ```json
+> { "env": { "OBSIDIAN_BASE_URL": "https://127.0.0.1:27124", "OBSIDIAN_API_KEY": "your-key" } }
+> ```
 
 ## Helper alias (reduces repetition)
 
