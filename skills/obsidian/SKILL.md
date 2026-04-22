@@ -142,3 +142,54 @@ obs "$OBSIDIAN_BASE_URL/vault/${ROOT}/work/"
 | 401         | Wrong or missing API key                |
 | 404         | Note/path doesn't exist                 |
 | 0 / refused | Obsidian not running or plugin disabled |
+
+---
+
+## One-time Migration (old → new folder structure)
+
+If your vault still uses a legacy structure (e.g. `Claude Code/{Allgemein,Privat,Arbeit}/`),
+run this script to move all notes into the new `$OBSIDIAN_ROOT/{misc,private,work}/` layout:
+
+```bash
+python3 - <<'EOF'
+import subprocess, json, urllib.parse, os, sys
+
+BASE = os.environ["OBSIDIAN_BASE_URL"]
+KEY  = os.environ["OBSIDIAN_API_KEY"]
+ROOT = os.environ.get("OBSIDIAN_ROOT", "claude-memory")
+
+FOLDER_MAP = {
+    "Claude Code/Allgemein": f"{ROOT}/misc",
+    "Claude Code/Privat":    f"{ROOT}/private",
+    "Claude Code/Arbeit":    f"{ROOT}/work",
+}
+
+def api(method, path, **kwargs):
+    url = f"{BASE}/vault/{urllib.parse.quote(path, safe='/')}"
+    cmd = ["curl", "-sk", "-X", method, "-H", f"Authorization: Bearer {KEY}"]
+    if "data" in kwargs:
+        cmd += ["-H", "Content-Type: text/markdown", "--data-binary", kwargs["data"]]
+    cmd.append(url)
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    return r.stdout
+
+for old_folder, new_folder in FOLDER_MAP.items():
+    listing = api("GET", old_folder + "/")
+    try:
+        files = json.loads(listing).get("files", [])
+    except Exception:
+        print(f"Skip {old_folder} — not found or empty")
+        continue
+    for f in files:
+        if not f.endswith(".md"):
+            continue
+        old_path = f"{old_folder}/{f}"
+        new_path = f"{new_folder}/{f}"
+        content = api("GET", old_path)
+        api("PUT", new_path, data=content)
+        api("DELETE", old_path)
+        print(f"Moved: {old_path} → {new_path}")
+
+print("Migration complete.")
+EOF
+```
