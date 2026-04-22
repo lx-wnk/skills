@@ -41,18 +41,15 @@ If something gets written to CLAUDE.md or project documentation, consider whethe
 - **SSL:** self-signed cert → always use `curl -sk`
 - **Default subfolders:** `private/`, `work/`, `misc/`
 
-Resolve the root at runtime:
-
-```bash
-ROOT="${OBSIDIAN_ROOT:-claude-memory}"
-```
-
 ## Helper alias (reduces repetition)
 
 ```bash
 obs() { curl -sk -H "Authorization: Bearer $OBSIDIAN_API_KEY" "$@"; }
 ROOT="${OBSIDIAN_ROOT:-claude-memory}"
 ```
+
+> **Note:** Each Bash tool call runs in a fresh shell — `obs()` and `ROOT` do not persist between
+> invocations. Redefine both at the top of each command, or inline the full `curl -sk -H "Authorization: Bearer $OBSIDIAN_API_KEY"` directly.
 
 ---
 
