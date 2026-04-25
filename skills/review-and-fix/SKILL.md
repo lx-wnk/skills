@@ -1,121 +1,191 @@
 ---
 name: review-and-fix
 description: >-
-  Review open pull requests for bugs, compliance violations, and design issues — then fix what's clear and escalate what needs a decision.
-  Make sure to use this skill whenever the user asks to review PRs, check open PRs, do a code review with fixes,
-  audit pull requests, or says things like "review my PRs", "check the open PRs", "fix PR issues", "PR review".
+  Review the current branch — either its open PR or the branch diff vs. the main branch — using ALL available review skills and agents discovered at runtime, then fix what's clear and escalate what needs a decision.
+  Make sure to use this skill whenever the user asks to review the current PR, review the current branch, check the current changes, do a code review with fixes,
+  audit the current branch, or says things like "review my PR", "review my branch", "fix PR issues", "PR review", "review my changes".
   Also use when the user provides a PR number and wants it reviewed or fixed.
 user-invocable: true
-argument-hint: "[PR-number or leave empty for all open PRs]"
-allowed-tools: "Bash(gh *) Bash(git *) Read Edit Write Agent"
+argument-hint: "[PR-number | base-branch (default: main)]"
+allowed-tools: "Bash(gh *) Bash(git *) Bash(which *) Bash(command *) Read Edit Write Agent Skill"
 ---
 
-# Review and Fix PRs
+# Review and Fix — Current Branch
 
-Review open PRs, fix what's clear, escalate what needs a decision.
+Discover every available review skill, agent, and CLI tool at runtime. Launch them all in parallel against the current branch. Fix what's clear, escalate what needs a decision.
 
 ## Workflow
 
 ```mermaid
 flowchart TD
-  A["Identify PRs"] --> B["Parallel review agents"]
-  B --> C["Categorize findings"]
-  C -->|sure| D["Fix confident issues"]
-  C -->|unsure| E["Collect design decisions"]
-  D --> F["Commit + push"]
-  E --> G["Present options table"]
-  G --> H["Wait for user choice"]
-  H --> I["Implement chosen options"]
-  I --> F
+  A["Determine target"] --> B["Discover all review resources"]
+  B --> C["Spawn one agent per resource (parallel)"]
+  C --> D["Aggregate + deduplicate findings"]
+  D --> E["Verify on actual branch"]
+  E --> F["Categorize: confident vs. design decision"]
+  F -->|confident| G["Fix + commit"]
+  F -->|uncertain| H["Present options table"]
+  H --> I["Wait for user choice"]
+  I --> J["Implement + commit"]
+  G --> K["Push"]
+  J --> K
 ```
 
 ## Examples
 
 ```bash
-# Review all open PRs
+# Review current branch (auto-detect PR or diff vs main)
 /review-and-fix
 
 # Review a specific PR
 /review-and-fix 42
 
-# Review multiple specific PRs
-/review-and-fix 42 57 63
+# Review current branch vs a non-main base
+/review-and-fix develop
 ```
 
-## Phase 1: Identify PRs
+---
 
-If `$ARGUMENTS` contains PR numbers, use those. Otherwise find all open PRs:
+## Phase 1: Determine Target
+
+**If `$ARGUMENTS` looks like a number**, treat it as a PR number:
+```bash
+gh pr view "$ARGUMENTS" --json number,title,headRefName,baseRefName
+```
+
+**Otherwise**, check if the current branch already has an open PR:
+```bash
+gh pr view --json number,title,headRefName,baseRefName 2>/dev/null
+```
+
+- PR found → target = `pr <number>`, base = PR's baseRefName
+- No PR → target = `branch <current-branch>`, base = `$ARGUMENTS` if given, otherwise `main`
 
 ```bash
-gh pr list --state open --json number,title,headRefName
+CURRENT_BRANCH=$(git branch --show-current)
 ```
 
-## Phase 2: Parallel Reviews
+---
 
-Launch one review agent per PR (use `run_in_background: true`). Each agent:
+## Phase 2: Discover All Review Resources at Runtime
 
-1. `gh pr diff <N>` to read the full diff
-2. `gh pr view <N> --json commits` for commit SHA
-3. Read all relevant CLAUDE.md files (root + touched directories)
-4. Read modified files on the branch via `git show <branch>:<path>`
+Before spawning any agents, compile a **review resource list** from three sources. Do this research in parallel using background agents or direct tool calls.
 
-**Review checklist per agent:**
+### 2a — Scan available skills
 
-- CLAUDE.md compliance (DRY, code quality, conventions)
-- Bugs (logic errors, race conditions, resource leaks, security)
-- Stale comments/docs after behavioral changes
-- Git history context (`git blame`, previous PR patterns)
+Look at the full list of skills visible in your current session context (the `available-skills` section of the system-reminder). Extract every skill whose **name or description** contains any of:
+`review`, `audit`, `check`, `inspect`, `analyze`, `quality`, `security`, `simplif`, `lint`
 
-**Ignore:** Style nitpicks, linter/typechecker issues, missing tests, pre-existing issues.
+For each match, record:
+- Skill invocation name (e.g. `architecture-review`, `pr-review-toolkit:review-pr`)
+- What it focuses on (from its description)
+- What arguments it accepts (from argument-hint)
 
-Each agent returns issues with: description, severity, file/line, confidence level.
+### 2b — Scan available agent types
 
-## Phase 3: Verify Findings
+Check which specialized agent types are available (documented in the Agent tool's subagent_type list). Extract every agent whose description mentions:
+`review`, `audit`, `security`, `quality`, `analysis`
 
-For each reported issue, verify on the actual branch:
+For each match, record the subagent_type and its strengths.
+
+### 2c — Probe external CLI tools
+
+Run these checks in parallel:
+```bash
+command -v coderabbit 2>/dev/null && coderabbit auth status 2>&1 | head -1
+command -v semgrep 2>/dev/null && echo "semgrep available"
+command -v eslint 2>/dev/null && echo "eslint available"
+command -v phpstan 2>/dev/null && echo "phpstan available"
+command -v psalm 2>/dev/null && echo "psalm available"
+```
+
+Only include tools that are installed **and** authenticated/configured.
+
+---
+
+## Phase 3: Spawn One Agent per Review Resource (All Parallel)
+
+For every resource discovered in Phase 2, spawn one background agent (`run_in_background: true`).
+
+Each agent receives:
+- The review target (`pr <N>` or `branch <name>`)
+- The base branch
+- Its specific instructions: "invoke skill X with these arguments" / "run CLI tool Y" / "use your built-in expertise as subagent_type Z"
+- Return format: structured list of findings with `{ description, severity, file, line, confidence }`
+
+**Guidance per resource type:**
+
+| Resource type | How to invoke | What to pass as target |
+|---|---|---|
+| Skill (accepts `pr <N>`) | `Skill(name)` with args `pr <N>` or `branch <name>` | As documented in argument-hint |
+| Skill (no target arg) | `Skill(name)` without args — it reads git state automatically | — |
+| Agent subagent_type | `Agent(subagent_type=...)` with a crafted prompt | Include the diff / branch name in the prompt |
+| External CLI | `Bash(...)` targeting the branch diff | `--base <base>` or equivalent |
+
+Never skip a discovered resource. The goal is maximum coverage.
+
+---
+
+## Phase 4: Aggregate and Deduplicate
+
+Collect all agent results. For each finding:
+
+- If two or more agents report the **same file + roughly the same issue**, merge into one entry: mark it "confirmed by N agents (X, Y)"
+- Sort by severity: Critical → Warning → Info
+- Attach the source skill/agent name to every finding
+
+---
+
+## Phase 5: Verify on Branch
+
+For every Critical or Warning finding, verify the issue actually exists in the current branch code:
 
 ```bash
 git show <branch>:<file>
 ```
 
-Discard false positives. Review agents that can't see the branch code produce unreliable results — always verify before acting.
+Discard false positives silently. If verification confirms the issue, keep it.
 
-## Phase 4: Categorize
+---
+
+## Phase 6: Categorize
 
 **Confident fixes** (apply directly):
-
 - Undefined function calls (runtime crashes)
-- DRY violations with obvious extraction target
+- DRY violations with an obvious extraction target
 - Stale docs/comments contradicting new behavior
 - Missing guards that follow established patterns
-- Self-referencing loop bugs with clear fix
+- Self-referencing loop bugs with a clear fix
 
 **Design decisions** (escalate to user):
-
 - Architecture changes (data flow, endpoint design)
 - Multiple valid approaches with trade-offs
 - Security hardening scope decisions
 - New component extraction vs. inline
 
-## Phase 5: Fix Confident Issues
+---
+
+## Phase 7: Fix Confident Issues
 
 For each confident fix:
 
 1. `git checkout <branch>`
 2. Apply fix
-3. `git add <files> && git commit` with descriptive message
-4. Continue to next fix on same branch
+3. `git add <files> && git commit` with a descriptive message
 
-Push all branches at the end.
+Batch related fixes in a single commit. Push all fixes at the end.
 
-## Phase 6: Present Design Decisions
+---
 
-For each uncertain finding, present:
+## Phase 8: Present Design Decisions
+
+For each uncertain finding:
 
 ```
 ### N. <Title>
 
 <One-line problem description>
+<Source: skill/agent that reported it>
 
 | Option | Pro | Kontra |
 |--------|-----|--------|
@@ -128,14 +198,21 @@ For each uncertain finding, present:
 
 End with: "Welche Optionen soll ich umsetzen? (z.B. 1.B, 2.A, 3.C)"
 
-## Phase 7: Implement Choices
+---
 
-After user responds with choices, implement on the respective branches, commit, and push.
+## Phase 9: Implement Choices
+
+After user responds, implement chosen options, commit, and push.
+
+---
 
 ## Key Principles
 
-- **Parallel first:** Review all PRs simultaneously, not sequentially
-- **Verify before fixing:** Always `git show` the actual branch code before claiming a bug
-- **Minimal fixes:** Don't refactor surrounding code. Fix only the reported issue.
-- **Honest uncertainty:** If multiple valid approaches exist, escalate. Don't guess.
-- **One commit per concern:** Group related fixes in a single commit per branch
+- **Dynamic discovery:** Never hardcode skill or agent names — always discover at runtime
+- **Total coverage:** Every discovered review resource runs — no skipping
+- **Parallel first:** All review agents launch simultaneously for speed
+- **Verify before fixing:** Always `git show` the branch code before claiming a bug
+- **Minimal fixes:** Fix only the reported issue — no surrounding refactoring
+- **Honest uncertainty:** Multiple valid approaches → escalate, don't guess
+- **One commit per concern:** Group related fixes in a single commit
+- **Single target:** Always the current branch (or a named PR) — never all open PRs
