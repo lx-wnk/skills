@@ -1,3 +1,5 @@
 node_modules/
 HANDOFF-PROMPT.md
 obsidian-workspace/
+.claude/scheduled_tasks.lock
+docs/superpowers/plans/
