@@ -62,7 +62,7 @@ Users add the marketplace once, then install the plugin:
 /plugin install lx-wnk-skills
 ```
 
-Skills become available as `/lx-wnk-skills:<skill-name>` in Claude Code.
+Skills become available as `/lx-wnk-skills:<skill-name>` in Claude Code (e.g. `/lx-wnk-skills:review-and-fix`). This namespacing is mandatory for plugins and differs from skills.sh installs, where the same skill is invoked as `/review-and-fix` without a prefix.
 
 Optional next step: submit to the official Anthropic marketplace via `claude.ai/settings/plugins/submit` for discoverability through Claude Code's built-in plugin browser.
 
