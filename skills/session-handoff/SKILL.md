@@ -3,23 +3,26 @@ name: session-handoff
 description: >-
   Erstelle ein strukturiertes Handoff-Dokument am Ende einer Arbeitssession — was wurde implementiert,
   welche Entscheidungen wurden getroffen und warum, offene Fragen, und empfohlene nächste Schritte.
-  Das Dokument wird als HANDOFF.md im Repo-Root abgelegt.
+  Das Dokument wird als `outputs/HANDOFF.md` abgelegt (Repo-Konvention, vgl. `branch-review`).
   Verwende diesen Skill immer wenn der Nutzer die Session beenden will, eine Übergabe erstellen möchte,
   oder sagt: "session-handoff", "Handoff erstellen", "Session abschließen", "was haben wir heute gemacht",
   "Zusammenfassung der Session", "nächste Schritte dokumentieren", "übergib an nächste Session",
   "wrap up", "end of session", "session summary".
 user-invocable: true
-argument-hint: "[optionale Notizen oder Fokusthemen, z.B. 'Fokus: Auth-Refactoring']"
-allowed-tools: "Bash(git *) Bash(date) Bash(basename) Bash(head) Read Write Edit"
+argument-hint: "[Fokusthemen oder Zeithinweis, z.B. 'Fokus: Auth-Refactoring' oder 'seit Montag']"
+allowed-tools: "Bash(git *) Bash(date *) Bash(basename *) Bash(mkdir *) Read Write Edit"
 ---
 
 # Session Handoff
 
-Erstelle am Ende einer Arbeitssession ein strukturiertes Handoff-Dokument (`HANDOFF.md`) im Repo-Root.
+Erstelle am Ende einer Arbeitssession ein strukturiertes Handoff-Dokument unter `outputs/HANDOFF.md`.
 Ziel: Die nächste Session (oder ein anderer Entwickler) kann sofort dort weitermachen, wo diese aufgehört hat —
 ohne alten Kontext mühsam rekonstruieren zu müssen.
 
 **Sprache:** Handoff-Inhalt immer auf Deutsch schreiben, auch wenn Commits oder Code auf Englisch sind.
+
+**Output-Pfad:** Immer `outputs/HANDOFF.md` (konsistent mit `branch-review`/`full-project-review`).
+`outputs/` sollte projektweit per `.gitignore` ignoriert sein; das ist Aufgabe des Repos, nicht dieses Skills.
 
 ## Beispiele
 
@@ -29,28 +32,53 @@ ohne alten Kontext mühsam rekonstruieren zu müssen.
 
 # Mit optionalem Fokushinweis
 /session-handoff Fokus: Auth-Refactoring und neue API-Endpoints
+
+# Mit Zeithinweis (überschreibt die Default-Heuristik)
+/session-handoff seit Montag
 ```
 
-## Schritt 1: Daten sammeln
+## Schritt 1: Session-Grenze bestimmen
 
-Führe diese Befehle aus, um die Session zu rekonstruieren:
+Die Session-Grenze entscheidet, welche Commits in den Handoff gehören. Reihenfolge:
+
+1. **Konversationskontext zuerst.** Du weißt aus dieser Konversation, wann die Session begonnen hat —
+   nutze dieses Wissen primär. Beispiel: "Wir haben heute mit dem Auth-Refactoring angefangen" → nur Commits ab dem ersten Refactoring-Commit.
+2. **`$ARGUMENTS`-Zeithinweis** (wenn vorhanden): "seit Montag", "letzte 2 Tage", "heute" → in `--since="..."` umsetzen.
+3. **Fallback-Heuristik** (nur wenn 1+2 nichts liefern): die letzten 20 Commits nehmen und im Handoff explizit
+   vermerken, dass die Session-Grenze unsicher ist.
+
+Verlasse dich nicht auf `@{N hours ago}` — diese Reflog-Syntax ist auf frischen Clones leer und liefert
+falsch-leere Diffs.
+
+## Schritt 2: Daten sammeln
 
 ```bash
-# Aktuelles Datum und Uhrzeit → befüllt {DATUM} und {UHRZEIT}
-date '+%Y-%m-%d %H:%M'
+# Datum/Uhrzeit inkl. Zeitzone → befüllt {DATUM_UTC}
+date -u '+%Y-%m-%d %H:%M UTC'
 
 # Repo-Name → befüllt {REPO-NAME}
 basename "$(git rev-parse --show-toplevel)"
 
-# Git-Log der Session
-# Heuristik: "letzte 8 Stunden" ist nur ein Fallback — bevorzuge den Konversationskontext,
-# um die Session-Grenze zu bestimmen. Falls $ARGUMENTS einen Zeithinweis enthält
-# (z.B. "seit Montag", "letzte 2 Tage"), nutze diesen stattdessen.
-RECENT=$(git log --oneline --since="8 hours ago" 2>/dev/null); [ -n "$RECENT" ] && echo "$RECENT" || git log --oneline -20
+# Aktueller Branch → befüllt {BRANCH}
+git branch --show-current
+```
 
-# Zuletzt geänderte Dateien (Session-Fenster, passend zur 8-Stunden-Heuristik)
-git diff --name-only "@{8 hours ago}" HEAD 2>/dev/null || git diff --name-only "HEAD~20" HEAD 2>/dev/null
+Für den Commit-Range nutze die in Schritt 1 bestimmte Grenze. Beispiele:
 
+```bash
+# Variante A: Konversationskontext sagt "seit Commit <SHA>"
+git log --oneline <SHA>..HEAD
+
+# Variante B: $ARGUMENTS hat einen Zeithinweis (in --since umgesetzt)
+git log --oneline --since="<übersetzter Zeithinweis>"
+
+# Variante C: Fallback (Session-Grenze unsicher)
+git log --oneline -20
+```
+
+Geänderte Dateien für denselben Range: `git log --name-only --pretty=format: <range> | sort -u`.
+
+```bash
 # Aktuell offene / uncommittete Änderungen
 git status --short
 
@@ -61,18 +89,27 @@ git grep --untracked -n "TODO\|FIXME\|HACK\|XXX\|NOCOMMIT" -- ':!*.lock' ':!node
 Lies optional relevante Dateien, die durch die Git-Daten als zentral identifiziert werden
 (z.B. kürzlich stark veränderte Dateien, CLAUDE.md falls vorhanden).
 
-## Schritt 2: HANDOFF.md schreiben
+## Schritt 3: HANDOFF.md schreiben
 
-Bevor du schreibst: Prüfe mit `Read`, ob `HANDOFF.md` im Repo-Root bereits existiert.
-Falls ja, informiere den Nutzer und frage, ob die Datei überschrieben oder ein neuer Abschnitt angehängt werden soll.
-Fahre erst nach dessen Bestätigung fort.
+**Output-Verzeichnis sicherstellen:**
 
-Erstelle oder aktualisiere `HANDOFF.md` im Repo-Root mit folgendem Aufbau:
+```bash
+mkdir -p outputs
+```
+
+**Existierende Datei prüfen:**
+
+- Existiert `outputs/HANDOFF.md` schon → **Default: neuen datierten Abschnitt oben anhängen** (alte Abschnitte bleiben erhalten).
+- Nur dann fragen, wenn der User eine andere Strategie signalisiert ("ersetzen", "neu schreiben").
+
+**Dateiinhalt erzeugen** anhand des folgenden Schemas. **Wichtig:** Die HTML-Kommentare (`<!-- ... -->`)
+sind Anweisungen für dich — sie gehören **nicht** in die finale Datei. Ersetze jeden Kommentar durch den
+ausgefüllten Inhalt oder lasse den Abschnitt mit `_(keine)_` leer.
 
 ```markdown
-# Session Handoff — {DATUM} {UHRZEIT}
+# Session Handoff — {DATUM_UTC}
 
-> Generiert von `/session-handoff` · Repo: {REPO-NAME}
+> Generiert von `/session-handoff` · Repo: {REPO-NAME} · Branch: {BRANCH}
 
 ---
 
@@ -93,7 +130,8 @@ Erstelle oder aktualisiere `HANDOFF.md` im Repo-Root mit folgendem Aufbau:
 
 ## Uncommitted Änderungen (WIP)
 
-<!-- Automatisch aus `git status --short` befüllt — zeigt, was noch nicht committed wurde -->
+<!-- Automatisch aus `git status --short` befüllt — zeigt, was noch nicht committed wurde.
+     Falls keine uncommitteten Änderungen: `_(keine)_` schreiben. -->
 
 - ...
 
@@ -130,7 +168,7 @@ Erstelle oder aktualisiere `HANDOFF.md` im Repo-Root mit folgendem Aufbau:
 
 ---
 
-_Letzte Aktualisierung: {DATUM} {UHRZEIT}_
+_Letzte Aktualisierung: {DATUM_UTC}_
 ```
 
 ### Hinweise zum Ausfüllen
@@ -153,25 +191,18 @@ weglassen.
 "Unit-Tests für `AuthService.login()` in `tests/auth.test.ts` schreiben".
 
 **Optionale Argumente (`$ARGUMENTS`):** Falls der Nutzer Fokusthemen, Notizen oder einen Zeithinweis
-übergeben hat, berücksichtige diese beim Bestimmen der Session-Grenze, beim Priorisieren der nächsten
-Schritte und beim Formulieren der Entscheidungen.
-
-## Schritt 3: .gitignore prüfen
-
-Prüfe mit `Read`, ob `.gitignore` im Repo-Root existiert und ob `HANDOFF.md` bereits eingetragen ist.
-Falls der Eintrag fehlt: Prüfe zuerst, ob die Datei bereits getrackt wird:
-
-```bash
-git ls-files --error-unmatch HANDOFF.md 2>/dev/null && echo "tracked"
-```
-
-- Gibt es **"tracked"** aus → Datei ist bereits committed. Füge `HANDOFF.md` **nicht** zu `.gitignore` hinzu und informiere den Nutzer.
-- Gibt es nichts aus → Datei ist untracked. Füge `HANDOFF.md` per `Edit` zu `.gitignore` hinzu.
+übergeben hat, berücksichtige diese in Schritt 1 (Session-Grenze) und beim Priorisieren der nächsten
+Schritte.
 
 ## Schritt 4: Bestätigung
 
 Teile dem Nutzer mit:
 
-- Pfad der erstellten Datei (`HANDOFF.md`)
+- Pfad der erstellten/aktualisierten Datei (`outputs/HANDOFF.md`)
 - Kurze Zusammenfassung: wie viele Commits, wie viele offene Fragen, wie viele nächste Schritte
-- Hinweis, dass HANDOFF.md gitignored ist (nicht eingecheckt wird)
+- Ob ein neuer Abschnitt angehängt oder die Datei neu erstellt wurde
+
+## Verwandte Skills
+
+- `agent-context-update` — wenn projekt-übergreifendes Wissen aus dieser Session in den Agent-Context fließen soll, ergänzend zum Handoff.
+- `branch-review` — wenn vor dem Handoff noch ein Code-Review der Session-Änderungen gewünscht ist.
