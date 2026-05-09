@@ -1,6 +1,7 @@
 ---
 name: branch-review
-description: Vollumfängliches Multi-Agenten-Code-Review der Änderungen zwischen aktuellem Branch und einem Basis-Branch (Default main, Fallback master/develop). Spawnt parallele Subagenten für Code-Quality, Architektur, Security (OWASP/CWE/CVSS), SEO, Datenschutz/Recht, UI/UX (WCAG) und Performance und konsolidiert deren Reports in eine vollständige Findings.md mit Priorisierung P0–P4 und begründeten Empfehlungen. Nutze diesen Skill bei "review this branch", "review meinen branch", "PR review", "diff review", "branch review", "review die änderungen", "review my PR", "code review für branch", "review what changed", oder wenn ein PR-Link, eine Branch-Range oder ein Diff zur Prüfung gepostet wird — auch ohne explizites Wort "review", wenn der Kontext klar ist (z.B. "schau dir den branch an"). NICHT triggern für ein Audit des gesamten Projekts ohne Branch-Bezug — dafür gibt es full-project-review.
+description: Vollumfängliches Multi-Agenten-Code-Review der Änderungen zwischen aktuellem Branch und einem Basis-Branch (Default main, Fallback master/develop). Spawnt parallele Subagenten für Code-Quality, Architektur, Security (OWASP/CWE/CVSS), SEO, Datenschutz/Recht, UI/UX (WCAG) und Performance und konsolidiert deren Reports in eine vollständige Findings.md mit Priorisierung P0–P4 und begründeten Empfehlungen. Optional (`--apply-fixes`) wendet danach klare Fixes direkt an und eskaliert Design-Entscheidungen an den User. Nutze diesen Skill bei "review this branch", "review meinen branch", "PR review", "diff review", "branch review", "review die änderungen", "review my PR", "code review für branch", "review what changed", "review and fix", "fix PR issues", oder wenn ein PR-Link, eine Branch-Range oder ein Diff zur Prüfung gepostet wird — auch ohne explizites Wort "review", wenn der Kontext klar ist (z.B. "schau dir den branch an"). NICHT triggern für ein Audit des gesamten Projekts ohne Branch-Bezug — dafür gibt es full-project-review.
+argument-hint: "[base-branch] [--apply-fixes]"
 ---
 
 # Branch Review (Multi-Agenten)
@@ -118,3 +119,88 @@ Pfad: im Outputs-/Workspace-Ordner ablegen (`outputs/Findings.md` oder gleichwer
 - **Begründung ist nicht verhandelbar.** Jeder Punkt erklärt, WARUM er drin steht und WARUM die Empfehlung besser ist. Das ist der Wert des Reports — eine Liste ohne Begründung ist Lärm.
 - **Kein Sicherheits-Theater.** Keine generischen "nutze HTTPS"-Hinweise, wenn HTTPS bereits aktiv ist. Wenn ein Standard erfüllt ist → als P4 "bestätigt: …" einmalig vermerken, nicht ignorieren, aber auch nicht aufblähen.
 - **Diff-Disziplin.** Branch-Review heißt: der Diff ist der Anker. Systemweite Implikationen sind erlaubt, müssen aber als solche gekennzeichnet werden ("Diff-Auslöser: …").
+
+---
+
+## Optionale Phase: Auto-Fix (`--apply-fixes`)
+
+**Default ist read-only.** Nur wenn `$ARGUMENTS` das Flag `--apply-fixes` enthält, läuft die folgende Phase nach Schritt 8 (Verifikations-Pass).
+
+Diese Phase wendet klare Fixes direkt auf den Branch an und eskaliert Design-Entscheidungen an den User. Sie ersetzt das frühere `review-and-fix`-Skill.
+
+### Voraussetzungen
+
+- Working tree muss clean sein (`git status --porcelain` leer). Sonst abbrechen mit Hinweis "Bitte erst committen oder stashen."
+- Aktueller Branch ist nicht `main`/`master`/`develop` (kein Commit auf Default-Branch).
+- `Findings.md` aus den vorherigen Phasen liegt vor.
+
+### Fix-Klassifikation
+
+Für **jedes** Finding in `Findings.md` eine der drei Kategorien zuordnen:
+
+| Kategorie | Kriterien | Aktion |
+|---|---|---|
+| **Confident Fix** | Eindeutig ein Bug, eine offensichtliche Korrektur (z.B. Tippfehler in API-Path, Missing-Guard nach etabliertem Pattern, stale Doc widerspricht Code, undefined function, DRY-Violation mit klarem Extraktionsziel) | direkt patchen |
+| **Design Decision** | Mehrere valide Ansätze, Architekturwirkung, Scope-Frage, Security-Hardening-Tiefe | nicht patchen, eskalieren |
+| **Out of Auto-Fix Scope** | Test-Coverage, Linter-Style, Refactoring-Nice-to-have, Performance-Tuning ohne klares Ziel | nur listen, weder patchen noch eskalieren |
+
+Keine Mehrfach-Klassifikation. Wenn unsicher → Design Decision (eskalieren ist immer billiger als heimlich falsch fixen).
+
+### Confident-Fix-Workflow
+
+Pro Confident-Fix:
+
+1. **Verifizieren** — `git show <branch>:<file>` lesen, sicherstellen dass die Stelle und das Problem so existieren wie das Finding behauptet. Bei Mismatch: Finding als Hypothese zurück in `Findings.md` und nicht patchen.
+2. **Minimaler Patch** — nur die gefundene Stelle fixen, kein umliegendes Refactoring, kein Reformatting.
+3. **Commit** — `git add <file> && git commit -m "fix(<area>): <one-line>"` mit Referenz auf die Finding-ID (z.B. `[F-014]`).
+4. **Idempotenz prüfen** — wenn der Fix einen Test/Lint braucht: ausführen. Wenn nicht möglich: in Commit-Message vermerken.
+
+Verwandte Confident-Fixes können in einem Commit zusammengefasst werden, wenn sie sich logisch decken (z.B. dieselbe stale Doc an drei Stellen).
+
+### Design-Decision-Eskalation
+
+Für jeden Design-Decision-Eintrag eine Tabelle in folgendem Format an den User schicken:
+
+```
+### N. <Titel>
+
+<Ein-Satz-Problembeschreibung>
+Quelle: <Subagent / Finding-ID>
+
+| Option | Pro | Kontra |
+|--------|-----|--------|
+| A. <Variante 1> | … | … |
+| B. <Variante 2> | … | … |
+| C. <Variante 3> | … | … |
+
+Empfehlung: <A | B | C> — <ein Satz Begründung>
+```
+
+Am Ende: "Welche Optionen soll ich umsetzen? (z.B. 1.B, 2.A, 3.C)"
+
+Nach User-Antwort: Optionen umsetzen, je betroffener Konzern ein Commit, am Ende `git push`.
+
+### Push-Strategie
+
+- **Ist der Branch Teil eines offenen PRs:** `git push` auf den PR-Branch.
+- **Kein PR vorhanden:** Branch existiert nur lokal/auf dem Remote → `git push -u origin <branch>`.
+- **Niemals** auf `main`/`master`/`develop` pushen.
+
+### Coverage in Findings.md
+
+Nach Auto-Fix-Phase einen neuen Abschnitt `## Auto-Fix-Bilanz` an `Findings.md` anhängen:
+
+- Confident Fixes angewandt: N (mit Finding-IDs und Commit-SHAs)
+- Design Decisions zur Eskalation: N (mit Finding-IDs)
+- Out-of-Scope-Findings: N (mit Finding-IDs und Begründung)
+- Verworfene Hypothesen (nicht reproduzierbar auf Branch): N (mit Finding-IDs)
+
+Damit bleibt nachvollziehbar, was der Skill am Code geändert hat — und was der User noch entscheiden muss.
+
+### Auto-Fix-Prinzipien
+
+- **Verify before fix.** Jeder Fix folgt einer Verifikation am realen Branch-Code.
+- **Minimal change.** Kein Refactoring, kein Reformat, kein "while-I'm-here".
+- **One concern per commit.** Lieber drei kleine Commits als einer mit drei verschiedenen Fixes.
+- **Honest uncertainty.** Im Zweifel nicht fixen, sondern eskalieren.
+- **Read-only ist Default.** Auto-Fix läuft NUR mit explizitem `--apply-fixes`.
