@@ -22,3 +22,7 @@ Required frontmatter fields:
 
 - Skill instructions: English
 - Skill output to users: can be German where appropriate (e.g. "Empfehlung")
+
+## See Also
+
+- [STYLEGUIDE.md](STYLEGUIDE.md) — concrete authoring rules with examples
