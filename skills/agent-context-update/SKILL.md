@@ -1,11 +1,6 @@
 ---
 name: agent-context-update
-description: >-
-  Update Agent-Context to the latest version — refreshes shared infrastructure files while preserving all project-specific
-  configuration, memory, and skills.
-  Use this skill whenever the user asks to update Agent-Context, upgrade Agent-Context, sync Agent-Context,
-  or says things like "update agent-context", "get latest agent-context", "refresh context files", "sync agent infrastructure".
-  Also use when the user wants to check if a newer Agent-Context version is available.
+description: 'Update Agent-Context to the latest version — refreshes shared infrastructure files while preserving all project-specific configuration, memory, and skills. Use this skill whenever the user asks to update Agent-Context, upgrade Agent-Context, sync Agent-Context, or says things like "update agent-context", "get latest agent-context", "refresh context files", "sync agent infrastructure". Also use when the user wants to check if a newer Agent-Context version is available.'
 user-invocable: true
 argument-hint: "[version tag, e.g. v0.2.1, or leave empty for latest]"
 allowed-tools: "Bash(gh *) Bash(curl *) Read Write WebFetch Agent"

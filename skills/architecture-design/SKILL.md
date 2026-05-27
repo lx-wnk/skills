@@ -1,11 +1,6 @@
 ---
 name: architecture-design
-description: >-
-  Design system-level architecture — bounded contexts, modules, domains, layering, dependency direction, and ADRs.
-  Make sure to use this skill whenever the user asks to design an architecture, plan a system, define bounded contexts,
-  draft an ADR, decide on module boundaries, or says things like "entwirf die Architektur", "plane das System",
-  "wie strukturieren wir X", "architecture design", "system design", "bounded contexts", "module layout".
-  Use this skill for HIGH-LEVEL structural decisions only — component and class-level design belongs in `component-design`.
+description: 'Design system-level architecture — bounded contexts, modules, domains, layering, dependency direction, and ADRs. Make sure to use this skill whenever the user asks to design an architecture, plan a system, define bounded contexts, draft an ADR, decide on module boundaries, or says things like "entwirf die Architektur", "plane das System", "wie strukturieren wir X", "architecture design", "system design", "bounded contexts", "module layout". Use this skill for HIGH-LEVEL structural decisions only — component and class-level design belongs in `component-design`.'
 user-invocable: true
 argument-hint: "[short topic, e.g. 'order fulfillment module']"
 allowed-tools: "Bash(git *) Bash(ls *) Read Glob Grep Write WebFetch"
@@ -89,7 +84,7 @@ Typical open questions:
 
 ## Phase 5: Propose 2-3 Approaches
 
-Present each with a one-line headline, a diagram sketch (Mermaid if helpful), and pro/kontra. End with **Empfehlung** and reasoning.
+Present each with a one-line headline, a diagram sketch (Mermaid if helpful), and pros/cons. End with **Recommendation** and reasoning.
 
 Typical dimensions to vary across options:
 
@@ -123,6 +118,7 @@ Skip the ADR for obvious defaults. Template:
 # ADR-NNNN: <Title>
 
 **Status:** Proposed | Accepted
+
 **Date:** YYYY-MM-DD
 
 ## Context
@@ -136,7 +132,9 @@ Skip the ADR for obvious defaults. Template:
 ## Consequences
 
 **Positive:** ...
+
 **Negative / Trade-offs:** ...
+
 **Follow-ups:** ...
 
 ## Alternatives Considered

@@ -1,12 +1,6 @@
 ---
 name: architecture-review
-description: >-
-  Review system-level architecture of a PR, branch, namespace, or whole project — boundary violations,
-  dependency cycles, layer breaches, ADR compliance, cohesion of modules and bounded contexts.
-  Make sure to use this skill whenever the user asks to review the architecture, audit module boundaries,
-  check for circular dependencies, verify domain structure, or says things like "architektur-review",
-  "prüfe die struktur", "check architecture", "review namespace", "audit boundaries", "are our modules clean".
-  Use this skill for HIGH-LEVEL structural review only — SOLID, class design, and method-level issues belong in `component-review`.
+description: 'Review system-level architecture of a PR, branch, namespace, or whole project — boundary violations, dependency cycles, layer breaches, ADR compliance, cohesion of modules and bounded contexts. Make sure to use this skill whenever the user asks to review the architecture, audit module boundaries, check for circular dependencies, verify domain structure, or says things like "architektur-review", "prüfe die struktur", "check architecture", "review namespace", "audit boundaries", "are our modules clean". Use this skill for HIGH-LEVEL structural review only — SOLID, class design, and method-level issues belong in `component-review`.'
 user-invocable: true
 argument-hint: "[pr <N> | branch <name> | namespace <path> | leave empty for whole project]"
 allowed-tools: "Bash(gh *) Bash(git *) Bash(ls *) Read Glob Grep WebFetch"
@@ -135,7 +129,9 @@ Output in the user's language. Structure:
 ## Architecture Review — <scope>
 
 **Risk Level:** LOW | MEDIUM | HIGH | CRITICAL
+
 **Detected stack:** <stack>
+
 **Checks run:** <list>
 
 ## Critical (must fix)

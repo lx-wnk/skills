@@ -1,7 +1,6 @@
 # Distribution Strategy: Dual Channel (skills.sh + Claude Code Plugin)
 
-**Date:** 2026-04-28
-**Status:** Approved
+**Date:** 2026-04-28 **Status:** Approved
 
 ## Summary
 
@@ -107,7 +106,7 @@ Version is bumped manually on releases. Claude Code uses the git commit SHA if `
 Add the 5 missing skills to the existing table in `README.md`:
 
 | Skill | Description | Invoke |
-|---|---|---|
+| --- | --- | --- |
 | `architecture-design` | Design system-level architecture, bounded contexts, modules, ADRs | `/architecture-design [topic]` |
 | `architecture-review` | Review architecture of PR, branch, namespace, or whole project | `/architecture-review [pr N \| branch X \| namespace path]` |
 | `component-design` | Design low-level component/class structure and patterns | `/component-design [component name]` |

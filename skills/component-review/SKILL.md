@@ -1,12 +1,6 @@
 ---
 name: component-review
-description: >-
-  Review low-level component and class design — SOLID, cohesion, pattern correctness, interface design,
-  method contracts, aggregate integrity, and domain-model health inside a PR, branch, namespace, or module.
-  Make sure to use this skill whenever the user asks to review class design, check SOLID, audit a component,
-  check if a pattern is used correctly, or says things like "component review", "class review", "prüfe das klassen design",
-  "are these classes clean", "review the service", "solid check".
-  Use this skill for DETAIL REVIEW only — module boundaries and dependency structure belong in `architecture-review`.
+description: 'Review low-level component and class design — SOLID, cohesion, pattern correctness, interface design, method contracts, aggregate integrity, and domain-model health inside a PR, branch, namespace, or module. Make sure to use this skill whenever the user asks to review class design, check SOLID, audit a component, check if a pattern is used correctly, or says things like "component review", "class review", "prüfe das klassen design", "are these classes clean", "review the service", "solid check". Use this skill for DETAIL REVIEW only — module boundaries and dependency structure belong in `architecture-review`.'
 user-invocable: true
 argument-hint: "[pr <N> | branch <name> | namespace <path> | leave empty for current changes]"
 allowed-tools: "Bash(gh *) Bash(git *) Bash(ls *) Read Glob Grep WebFetch"
@@ -152,7 +146,9 @@ Output in the user's language:
 ## Component Review — <scope>
 
 **Risk Level:** LOW | MEDIUM | HIGH | CRITICAL
+
 **Detected stack:** <stack>
+
 **Files reviewed:** <N>
 
 ## Critical (must fix)
