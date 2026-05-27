@@ -1,12 +1,6 @@
 ---
 name: component-design
-description: >-
-  Design low-level component and class structure — classes, interfaces, design patterns, method signatures,
-  aggregates, service contracts, and collaboration within a single module or bounded context.
-  Make sure to use this skill whenever the user asks to design classes, pick a design pattern, define interfaces,
-  model an aggregate, shape a service, or says things like "wie strukturiere ich die klassen", "welches pattern passt",
-  "component design", "class design", "design the service", "model the aggregate".
-  Use this skill for DETAIL DESIGN inside a known module — system-level structure belongs in `architecture-design`.
+description: 'Design low-level component and class structure — classes, interfaces, design patterns, method signatures, aggregates, service contracts, and collaboration within a single module or bounded context. Make sure to use this skill whenever the user asks to design classes, pick a design pattern, define interfaces, model an aggregate, shape a service, or says things like "wie strukturiere ich die klassen", "welches pattern passt", "component design", "class design", "design the service", "model the aggregate". Use this skill for DETAIL DESIGN inside a known module — system-level structure belongs in `architecture-design`.'
 user-invocable: true
 argument-hint: "[component or module name, e.g. 'OrderService']"
 allowed-tools: "Bash(git *) Bash(ls *) Read Glob Grep Write WebFetch"
@@ -94,7 +88,7 @@ Each proposal contains:
 - **Trade-offs:** testability, extensibility, complexity cost
 - **Effort:** rough gut feel, not estimates
 
-End with **Empfehlung** and reason.
+End with **Recommendation** and reason.
 
 Typical axes to vary:
 
@@ -114,7 +108,9 @@ Template:
 # Component Design: <Name>
 
 **Module:** `<namespace/path>`
+
 **Date:** YYYY-MM-DD
+
 **Related ADR:** <id or none>
 
 ## Purpose

@@ -1,11 +1,8 @@
 # Skills Styleguide
 
-Conventions for authoring skills in this repository. The bar is consistency
-across skills, low surprise for users, and resilience to format changes
-elsewhere in the AI agent ecosystem.
+Conventions for authoring skills in this repository. The bar is consistency across skills, low surprise for users, and resilience to format changes elsewhere in the AI agent ecosystem.
 
-This guide complements [CLAUDE.md](CLAUDE.md) with concrete rules and
-examples. When something here conflicts with CLAUDE.md, CLAUDE.md wins.
+This guide complements [CLAUDE.md](CLAUDE.md) with concrete rules and examples. When something here conflicts with CLAUDE.md, CLAUDE.md wins.
 
 ---
 
@@ -24,8 +21,8 @@ Required fields (already mandated by CLAUDE.md):
 ---
 name: skill-name
 description: >-
-  One paragraph that is "pushy" — explicit trigger phrases the user might say,
-  what this skill does, and (optionally) what it does NOT do.
+  One paragraph that is "pushy" — explicit trigger phrases the user might say, what this skill does, and (optionally) what it does NOT do.
+
 user-invocable: true
 argument-hint: "[arg1] [arg2 (default: foo)]"
 allowed-tools: "Bash(git *) Read Edit"
@@ -42,7 +39,7 @@ allowed-tools: "Bash(git *) Read Edit"
 ### `user-invocable` and `argument-hint`
 
 - If `user-invocable: true`, `argument-hint` is required — even if the skill takes no arguments (then write `""`).
-- The hint is a *hint*, not a contract: it must accept reasonable variations (e.g. a numeric PR ID and a branch name in the same slot if both are valid). Document any positional/flag mix in the body.
+- The hint is a _hint_, not a contract: it must accept reasonable variations (e.g. a numeric PR ID and a branch name in the same slot if both are valid). Document any positional/flag mix in the body.
 
 ### `allowed-tools`
 
@@ -61,7 +58,7 @@ Recommended top-level sections, in this order:
 
 1. **Title** — `# <Human Title>` matching the skill name in spirit.
 2. **One-line purpose** — under the title, before any heading.
-3. **Scope** — what this skill does and explicitly does *not* cover.
+3. **Scope** — what this skill does and explicitly does _not_ cover.
 4. **Examples** — at least two `bash` blocks showing invocation forms.
 5. **Workflow / Phases** — numbered. Use a Mermaid `flowchart TD` for skills with more than three phases.
 6. **Output format** — if the skill produces a file, document the exact schema.
@@ -72,13 +69,13 @@ Skip sections that don't apply rather than leaving empty placeholders.
 
 ## 4. Language
 
-CLAUDE.md is the source of truth: **skill instructions are English, output to users may be German** where the skill is German-leaning by intent (e.g. `branch-review`, `full-project-review`, `session-handoff`).
+CLAUDE.md is the source of truth: **skill instructions are English; trigger phrases are bilingual; user-facing output follows the user's request language.**
 
 This means:
 
-- The instructions in the SKILL.md body **may** be German if the skill is explicitly designed to produce German output and the entire skill is monolingual. Don't switch languages mid-file.
-- The frontmatter `description` follows the same language as the body.
-- Trigger phrases in the description **should include both English and German variants** if both are common — that maximizes routing accuracy.
+- The instructions in the SKILL.md body are **always English**. Don't switch languages mid-file.
+- The frontmatter `description` is English, but **trigger phrases must include both English and German variants** (e.g. "review my branch" + "schau dir den branch an") so routing fires on either language.
+- User-facing output (reports, recommendations, messages) follows the language of the user's request — English request gets English output, German request gets German output.
 - Code, command examples, and tool names stay in their original language.
 
 When in doubt: write English. It is the lowest-friction default.
@@ -115,7 +112,7 @@ Skills routinely call each other. Conventions:
 - When recommending another skill in user-facing output, write its slash invocation: `/branch-review`, not just "branch-review".
 - Do **not** hardcode lists of "all available skills". The set changes per repo / per user installation. Either:
   - delegate routing to the agent's dispatcher (preferred), or
-  - read `skills/*/SKILL.md` at runtime to discover what is installed in *this* repo.
+  - read `skills/*/SKILL.md` at runtime to discover what is installed in _this_ repo.
 
 Avoid making a skill depend on inspecting opaque agent metadata (e.g. system-reminder contents) — those formats change.
 
@@ -169,7 +166,7 @@ When adding or renaming a skill:
 When in doubt about a pattern, mirror these:
 
 | Pattern | Reference skill |
-|---|---|
+| --- | --- |
 | Multi-agent review with output file | [`branch-review`](skills/branch-review/SKILL.md), [`full-project-review`](skills/full-project-review/SKILL.md) |
 | Read-only structural review | [`architecture-review`](skills/architecture-review/SKILL.md) |
 | Hybrid review + opt-in fix phase | [`branch-review`](skills/branch-review/SKILL.md) (with `--apply-fixes`) |
