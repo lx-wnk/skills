@@ -107,8 +107,7 @@ Path: store in the outputs/workspace folder (`outputs/Findings.md` or equivalent
 - **Location:** path:line / URL
 - **Diff reference:** which file/line from the diff triggered it
 - **Description:** what is the problem?
-- **Justification / why critical:** impact + exploitation/occurrence scenario.
-  Even for P3/P4 a justification is mandatory ("why mentioned at all").
+- **Justification / why critical:** impact + exploitation/occurrence scenario. Even for P3/P4 a justification is mandatory ("why mentioned at all").
 - **Reference:** CWE/OWASP/WCAG/GDPR article/best-practice source
 - **Recommendation:** concrete fix (code snippet when useful)
 - **Why better:** technical/legal justification of the recommendation
