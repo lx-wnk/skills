@@ -21,4 +21,9 @@ Required frontmatter fields:
 ## Language
 
 - Skill instructions: English
-- Skill output to users: can be German where appropriate (e.g. "Empfehlung")
+- Trigger phrases in `description`: English + German equivalents so skills fire on either language
+- Skill output to users: language of the user's request (English or German)
+
+## See Also
+
+- [STYLEGUIDE.md](STYLEGUIDE.md) — concrete authoring rules with examples

@@ -1,11 +1,6 @@
 ---
 name: agent-context-init
-description: >-
-  Initialize Agent-Context in the current project — sets up the layered context architecture with shared infrastructure,
-  project-specific layers, memory stubs, and skill registry.
-  Use this skill whenever the user asks to initialize Agent-Context, set up Agent-Context, bootstrap Agent-Context,
-  or says things like "init agent-context", "set up context layers", "add agent-context to this project".
-  Also use when the user wants to start using Agent-Context in a new or existing project.
+description: 'Initialize Agent-Context in the current project — sets up the layered context architecture with shared infrastructure, project-specific layers, memory stubs, and skill registry. Use this skill whenever the user asks to initialize Agent-Context, set up Agent-Context, bootstrap Agent-Context, or says things like "init agent-context", "set up context layers", "add agent-context to this project". Also use when the user wants to start using Agent-Context in a new or existing project.'
 user-invocable: true
 argument-hint: "[version tag, e.g. v0.2.1, or leave empty for latest]"
 allowed-tools: "Bash(gh *) Bash(curl *) Read Write WebFetch Agent"
