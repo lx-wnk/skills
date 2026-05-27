@@ -1,17 +1,6 @@
 ---
 name: branch-review
-description: >-
-  Complete multi-agent code review EXCLUSIVELY of the changes between the current branch and a base branch
-  (default main, fallback master/develop) — not an audit of the entire repo, but a deep review only of the
-  diff-touched areas. Spawns parallel subagents for code quality, architecture, security (OWASP/CWE/CVSS),
-  SEO, privacy/legal, UI/UX (WCAG), and performance, and consolidates their reports into a complete Findings.md
-  with P0–P4 prioritization and reasoned recommendations. Optionally (`--apply-fixes`) applies clear fixes
-  directly afterwards and escalates design decisions to the user.
-  Use this skill for "review this branch", "PR review", "diff review", "branch review", "review my PR",
-  "code review for branch", "review what changed", "review and fix", "fix PR issues", or German equivalents
-  "review meinen branch", "review die änderungen", "schau dir den branch an", "PR-Review", whenever a PR link,
-  a branch range, or a diff is posted for review — even without the explicit word "review" if context is clear.
-  DO NOT trigger for an audit of the entire project without branch context — use full-project-review for that.
+description: 'Complete multi-agent code review EXCLUSIVELY of the changes between the current branch and a base branch (default main, fallback master/develop) — not an audit of the entire repo, but a deep review only of the diff-touched areas. Spawns parallel subagents for code quality, architecture, security (OWASP/CWE/CVSS), SEO, privacy/legal, UI/UX (WCAG), and performance, and consolidates their reports into a complete Findings.md with P0–P4 prioritization and reasoned recommendations. Optionally (`--apply-fixes`) applies clear fixes directly afterwards and escalates design decisions to the user. Use this skill for "review this branch", "PR review", "diff review", "branch review", "review my PR", "code review for branch", "review what changed", "review and fix", "fix PR issues", or German equivalents "review meinen branch", "review die änderungen", "schau dir den branch an", "PR-Review", whenever a PR link, a branch range, or a diff is posted for review — even without the explicit word "review" if context is clear. DO NOT trigger for an audit of the entire project without branch context — use full-project-review for that.'
 argument-hint: "[base-branch] [--apply-fixes]"
 ---
 
@@ -206,11 +195,11 @@ This phase applies clear fixes directly to the branch and escalates design decis
 
 For **every** finding in `Findings.md`, assign one of three categories:
 
-| Category                  | Criteria                                                                                                                                                                                                  | Action                                |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| **Confident Fix**         | Unambiguous bug, obvious correction (e.g. typo in API path, missing guard following an established pattern, stale doc contradicts code, undefined function, DRY violation with a clear extraction target) | patch directly                        |
-| **Design Decision**       | Multiple valid approaches, architectural impact, scope question, depth of security hardening                                                                                                              | do not patch, escalate                |
-| **Out of Auto-Fix Scope** | Test coverage, linter style, refactoring nice-to-have, performance tuning without a clear target                                                                                                          | list only, neither patch nor escalate |
+| Category | Criteria | Action |
+| --- | --- | --- |
+| **Confident Fix** | Unambiguous bug, obvious correction (e.g. typo in API path, missing guard following an established pattern, stale doc contradicts code, undefined function, DRY violation with a clear extraction target) | patch directly |
+| **Design Decision** | Multiple valid approaches, architectural impact, scope question, depth of security hardening | do not patch, escalate |
+| **Out of Auto-Fix Scope** | Test coverage, linter style, refactoring nice-to-have, performance tuning without a clear target | list only, neither patch nor escalate |
 
 No multi-classification. When uncertain → Design Decision (escalating is always cheaper than silently fixing wrong).
 

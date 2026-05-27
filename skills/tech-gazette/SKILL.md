@@ -1,14 +1,8 @@
 ---
 name: tech-gazette
-description: >-
-  Generate a Tech Gazette as a self-contained HTML file covering 18+ topic areas relevant to Software Architects
-  and Lead Developers working in Shopware/E-Commerce agencies. Supports daily and weekly editions.
-  Use this skill whenever the user asks to create a tech gazette, generate a tech briefing, write a tech newspaper,
-  or says things like "tech gazette", "Gazette erstellen", "daily tech news", "weekly tech news", "Tech-Briefing",
-  "tägliche Gazette", "wöchentliche Gazette".
+description: 'Generate a Tech Gazette as a self-contained HTML file covering 18+ topic areas relevant to Software Architects and Lead Developers working in Shopware/E-Commerce agencies. Supports daily and weekly editions. Use this skill whenever the user asks to create a tech gazette, generate a tech briefing, write a tech newspaper, or says things like "tech gazette", "Gazette erstellen", "daily tech news", "weekly tech news", "Tech-Briefing", "tägliche Gazette", "wöchentliche Gazette".'
 user-invocable: true
-argument-hint: >-
-  "--daily|--weekly --topics 'Topic1: search terms; Topic2: search terms' --customers 'customer1.de: Stack. Wettbewerber: x.de | customer2.de: ...'"
+argument-hint: '"--daily|--weekly --topics ''Topic1: search terms; Topic2: search terms'' --customers ''customer1.de: Stack. Wettbewerber: x.de | customer2.de: ...''"'
 allowed-tools: "Read Write WebSearch WebFetch Agent"
 ---
 
@@ -28,8 +22,7 @@ Parse `$ARGUMENTS` for:
 --weekly --topics "Rust: Rust language release news; WebAssembly: WASM runtime browser news" --customers "shop.de: Shopware 6.6. Wettbewerber: x.de | other.de: ..."
 ```
 
-If no frequency flag is provided, default to `--weekly`.
-If no customers are provided, skip the Customer Radar section entirely.
+If no frequency flag is provided, default to `--weekly`. If no customers are provided, skip the Customer Radar section entirely.
 
 ### Topic modes
 
@@ -39,18 +32,18 @@ If no customers are provided, skip the Customer Radar section entirely.
 
 ## Edition Differences
 
-| Aspect                 | `--daily`                                         | `--weekly`                                         |
-| ---------------------- | ------------------------------------------------- | -------------------------------------------------- |
-| **Filename**           | `tech-gazette-daily-{YYYY-MM-DD}.html`            | `tech-gazette-weekly-{YYYY-MM-DD}.html`            |
-| **Search scope**       | Last 24-48 hours                                  | Last 7 days                                        |
-| **Search queries**     | Append `today` or `yesterday` to queries          | Use `{MONTH} {YEAR}`                               |
-| **Articles per topic** | 1-2 (only significant news)                       | 2-4 (comprehensive)                                |
-| **Topics**             | Only topics with actual news (skip empty ones)    | All 18 topics required                             |
-| **Hero article**       | Yes                                               | Yes                                                |
-| **Monats-Kontext**     | Skip                                              | Yes                                                |
-| **Layout variety**     | Simpler (prefer B, C, F)                          | Full rotation (A-G)                                |
-| **Masthead tagline**   | "Daily Tech Intelligence for Software Architects" | "Weekly Tech Intelligence for Software Architects" |
-| **Edition label**      | "Tagesausgabe · {date}"                           | "Ausgabe XX/2026"                                  |
+| Aspect | `--daily` | `--weekly` |
+| --- | --- | --- |
+| **Filename** | `tech-gazette-daily-{YYYY-MM-DD}.html` | `tech-gazette-weekly-{YYYY-MM-DD}.html` |
+| **Search scope** | Last 24-48 hours | Last 7 days |
+| **Search queries** | Append `today` or `yesterday` to queries | Use `{MONTH} {YEAR}` |
+| **Articles per topic** | 1-2 (only significant news) | 2-4 (comprehensive) |
+| **Topics** | Only topics with actual news (skip empty ones) | All 18 topics required |
+| **Hero article** | Yes | Yes |
+| **Monats-Kontext** | Skip | Yes |
+| **Layout variety** | Simpler (prefer B, C, F) | Full rotation (A-G) |
+| **Masthead tagline** | "Daily Tech Intelligence for Software Architects" | "Weekly Tech Intelligence for Software Architects" |
+| **Edition label** | "Tagesausgabe · {date}" | "Ausgabe XX/2026" |
 
 ## Examples
 
@@ -119,6 +112,7 @@ Also `WebFetch` each customer's shop URL for live findings.
 ## Step 2: Build the HTML file
 
 **Language:** German
+
 **Filename:** `tech-gazette-daily-{YYYY-MM-DD}.html` or `tech-gazette-weekly-{YYYY-MM-DD}.html` (based on frequency)
 
 ### Load templates
@@ -174,13 +168,11 @@ Do NOT stamp everything with the current calendar week. Each article gets the KW
 
 ### Article badges
 
-Severity: `badge-kritisch` (red), `badge-wichtig` (orange), `badge-update` (blue), `badge-info` (gray)
-Tags: `tag-shopware`, `tag-shopify`, `tag-php`, `tag-symfony`, `tag-js`, `tag-css`, `tag-ai`, `tag-devops`, `tag-db`, `tag-linux`, `tag-cloud`, `tag-perf`, `tag-agency`, `tag-ecommerce`, `tag-payment`, `tag-privacy`, `tag-security`, `tag-testing`
+Severity: `badge-kritisch` (red), `badge-wichtig` (orange), `badge-update` (blue), `badge-info` (gray) Tags: `tag-shopware`, `tag-shopify`, `tag-php`, `tag-symfony`, `tag-js`, `tag-css`, `tag-ai`, `tag-devops`, `tag-db`, `tag-linux`, `tag-cloud`, `tag-perf`, `tag-agency`, `tag-ecommerce`, `tag-payment`, `tag-privacy`, `tag-security`, `tag-testing`
 
 ### Customer Radar (if customers provided)
 
-Status badges: `status-ok` (green), `status-action` (yellow), `status-urgent` (red)
-Sentiment badges: `sentiment-positiv`, `sentiment-negativ`, `sentiment-neutral`, `sentiment-gemischt`, `sentiment-ausbaufaehig`
+Status badges: `status-ok` (green), `status-action` (yellow), `status-urgent` (red) Sentiment badges: `sentiment-positiv`, `sentiment-negativ`, `sentiment-neutral`, `sentiment-gemischt`, `sentiment-ausbaufaehig`
 
 Each customer card includes: header with status, market overview stats, competitor table, top 3 shop findings, affected gazette articles, industry priorities.
 

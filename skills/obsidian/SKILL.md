@@ -1,19 +1,6 @@
 ---
 name: obsidian
-description: >-
-  Obsidian vault access via Local REST API using curl. Use this skill to read, search, create,
-  or update notes in the Obsidian knowledge base.
-
-  Trigger on ANY of these:
-  - User mentions "obsidian", "vault", "knowledge base", "my notes", or "note" in a save/lookup context
-  - User asks to "save", "persist", "document", "note down", or "look up" information
-  - User says things like "save this for later", "note this down", "add this to my knowledge base",
-    "search my notes", "check if I have notes on X", "create a note", "update the note for X"
-  - CLAUDE.md says to search or store in Obsidian before/after tasks — do it proactively
-  - Starting a task where prior context might exist → search Obsidian first
-  - Mid-task discovery of a non-obvious insight, gotcha, root cause, or workaround → save it
-  - Finishing a task with decisions or learnings worth remembering → persist to Obsidian
-  - Something is written to CLAUDE.md or project docs → also save it to Obsidian for cross-project search
+description: 'Obsidian vault access via Local REST API using curl. Use this skill to read, search, create, or update notes in the Obsidian knowledge base. Trigger on ANY of these: user mentions "obsidian", "vault", "knowledge base", "my notes", or "note" in a save/lookup context; user asks to "save", "persist", "document", "note down", or "look up" information; user says things like "save this for later", "note this down", "add this to my knowledge base", "search my notes", "check if I have notes on X", "create a note", "update the note for X"; CLAUDE.md says to search or store in Obsidian before/after tasks — do it proactively; starting a task where prior context might exist → search Obsidian first; mid-task discovery of a non-obvious insight, gotcha, root cause, or workaround → save it; finishing a task with decisions or learnings worth remembering → persist to Obsidian; something is written to CLAUDE.md or project docs → also save it to Obsidian for cross-project search.'
 user-invocable: true
 argument-hint: "[search query or note path]"
 allowed-tools: "Bash(curl *)"
@@ -41,8 +28,7 @@ If something gets written to CLAUDE.md or project documentation, consider whethe
 - **SSL:** self-signed cert → always use `curl -sk`
 - **Default subfolders:** `private/`, `work/`, `misc/`
 
-> **Setup:** Add these vars to `~/.claude/settings.json` under the `"env"` key — **not** to
-> `~/.claude/settings.local.json` (that path is not a recognized Claude Code settings scope and is silently ignored):
+> **Setup:** Add these vars to `~/.claude/settings.json` under the `"env"` key — **not** to `~/.claude/settings.local.json` (that path is not a recognized Claude Code settings scope and is silently ignored):
 >
 > ```json
 > { "env": { "OBSIDIAN_BASE_URL": "https://127.0.0.1:27124", "OBSIDIAN_API_KEY": "your-key" } }
@@ -55,8 +41,7 @@ obs() { curl -sk -H "Authorization: Bearer $OBSIDIAN_API_KEY" "$@"; }
 ROOT="${OBSIDIAN_ROOT:-claude-memory}"
 ```
 
-> **Note:** Each Bash tool call runs in a fresh shell — `obs()` and `ROOT` do not persist between
-> invocations. Redefine both at the top of each command, or inline the full `curl -sk -H "Authorization: Bearer $OBSIDIAN_API_KEY"` directly.
+> **Note:** Each Bash tool call runs in a fresh shell — `obs()` and `ROOT` do not persist between invocations. Redefine both at the top of each command, or inline the full `curl -sk -H "Authorization: Bearer $OBSIDIAN_API_KEY"` directly.
 
 ---
 
@@ -154,8 +139,7 @@ obs "$OBSIDIAN_BASE_URL/vault/${ROOT}/work/"
 
 ## One-time Migration (old → new folder structure)
 
-If your vault still uses a legacy structure (e.g. `Claude Code/{Allgemein,Privat,Arbeit}/`),
-run this script to move all notes into the new `$OBSIDIAN_ROOT/{misc,private,work}/` layout:
+If your vault still uses a legacy structure (e.g. `Claude Code/{Allgemein,Privat,Arbeit}/`), run this script to move all notes into the new `$OBSIDIAN_ROOT/{misc,private,work}/` layout:
 
 ```bash
 python3 - <<'EOF'
