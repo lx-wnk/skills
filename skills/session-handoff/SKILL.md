@@ -1,208 +1,186 @@
 ---
 name: session-handoff
 description: >-
-  Erstelle ein strukturiertes Handoff-Dokument am Ende einer Arbeitssession — was wurde implementiert,
-  welche Entscheidungen wurden getroffen und warum, offene Fragen, und empfohlene nächste Schritte.
-  Das Dokument wird als `outputs/HANDOFF.md` abgelegt (Repo-Konvention, vgl. `branch-review`).
-  Verwende diesen Skill immer wenn der Nutzer die Session beenden will, eine Übergabe erstellen möchte,
-  oder sagt: "session-handoff", "Handoff erstellen", "Session abschließen", "was haben wir heute gemacht",
-  "Zusammenfassung der Session", "nächste Schritte dokumentieren", "übergib an nächste Session",
-  "wrap up", "end of session", "session summary".
+  Generate a structured handoff document at the end of a work session — what was implemented, which decisions were made and why, open questions, and recommended next steps. The document is written to `outputs/HANDOFF.md` (repo convention, cf. `branch-review`). Use this skill whenever the user wants to end a session, create a handoff, or says: "session-handoff", "wrap up", "end of session", "session summary", "hand over to next session", "Handoff erstellen", "Session abschließen", "was haben wir heute gemacht", "Zusammenfassung der Session", "nächste Schritte dokumentieren", "übergib an nächste Session".
+
 user-invocable: true
-argument-hint: "[Fokusthemen oder Zeithinweis, z.B. 'Fokus: Auth-Refactoring' oder 'seit Montag']"
+argument-hint: "[focus topics or time hint, e.g. 'Focus: Auth refactoring' or 'since Monday']"
 allowed-tools: "Bash(git *) Bash(date *) Bash(basename *) Bash(mkdir *) Read Write Edit"
 ---
 
 # Session Handoff
 
-Erstelle am Ende einer Arbeitssession ein strukturiertes Handoff-Dokument unter `outputs/HANDOFF.md`.
-Ziel: Die nächste Session (oder ein anderer Entwickler) kann sofort dort weitermachen, wo diese aufgehört hat —
-ohne alten Kontext mühsam rekonstruieren zu müssen.
+Generate a structured handoff document at `outputs/HANDOFF.md` at the end of a work session. Goal: the next session (or another developer) can pick up exactly where this one left off without reconstructing context from scratch.
 
-**Sprache:** Handoff-Inhalt immer auf Deutsch schreiben, auch wenn Commits oder Code auf Englisch sind.
+**Language:** the handoff content follows the language of the user's request (English request → English handoff, German request → German handoff). Commit messages and code stay in their original language.
 
-**Output-Pfad:** Immer `outputs/HANDOFF.md` (konsistent mit `branch-review`/`full-project-review`).
-`outputs/` sollte projektweit per `.gitignore` ignoriert sein; das ist Aufgabe des Repos, nicht dieses Skills.
+**Output path:** always `outputs/HANDOFF.md` (consistent with `branch-review` / `full-project-review`). `outputs/` should be `.gitignore`-d at repo level; that is the repo's responsibility, not this skill's.
 
-## Beispiele
+## Examples
 
 ```bash
-# Einfacher Handoff ohne weitere Argumente
+# Simple handoff without arguments
 /session-handoff
 
-# Mit optionalem Fokushinweis
-/session-handoff Fokus: Auth-Refactoring und neue API-Endpoints
+# With an optional focus hint
+/session-handoff Focus: Auth refactoring and new API endpoints
 
-# Mit Zeithinweis (überschreibt die Default-Heuristik)
-/session-handoff seit Montag
+# With a time hint (overrides the default heuristic)
+/session-handoff since Monday
 ```
 
-## Schritt 1: Session-Grenze bestimmen
+## Step 1: Determine the session boundary
 
-Die Session-Grenze entscheidet, welche Commits in den Handoff gehören. Reihenfolge:
+The session boundary decides which commits land in the handoff. Resolution order:
 
-1. **Konversationskontext zuerst.** Du weißt aus dieser Konversation, wann die Session begonnen hat —
-   nutze dieses Wissen primär. Beispiel: "Wir haben heute mit dem Auth-Refactoring angefangen" → nur Commits ab dem ersten Refactoring-Commit.
-2. **`$ARGUMENTS`-Zeithinweis** (wenn vorhanden): "seit Montag", "letzte 2 Tage", "heute" → in `--since="..."` umsetzen.
-3. **Fallback-Heuristik** (nur wenn 1+2 nichts liefern): die letzten 20 Commits nehmen und im Handoff explizit
-   vermerken, dass die Session-Grenze unsicher ist.
+1. **Conversation context first.** You know from this conversation when the session started — use that knowledge primarily. Example: "we started with the auth refactor today" → only commits from the first refactor commit onward.
+2. **`$ARGUMENTS` time hint** (if present): "since Monday", "last 2 days", "today" → translate into `--since="..."`.
+3. **Fallback heuristic** (only if 1 and 2 yield nothing): take the last 20 commits and mark in the handoff explicitly that the session boundary is uncertain.
 
-Verlasse dich nicht auf `@{N hours ago}` — diese Reflog-Syntax ist auf frischen Clones leer und liefert
-falsch-leere Diffs.
+Do not rely on `@{N hours ago}` — that reflog syntax is empty on fresh clones and silently produces empty diffs.
 
-## Schritt 2: Daten sammeln
+## Step 2: Collect data
 
 ```bash
-# Datum/Uhrzeit inkl. Zeitzone → befüllt {DATUM_UTC}
+# Date/time with timezone → fills {DATE_UTC}
 date -u '+%Y-%m-%d %H:%M UTC'
 
-# Repo-Name → befüllt {REPO-NAME}
+# Repo name → fills {REPO-NAME}
 basename "$(git rev-parse --show-toplevel)"
 
-# Aktueller Branch → befüllt {BRANCH}
+# Current branch → fills {BRANCH}
 git branch --show-current
 ```
 
-Für den Commit-Range nutze die in Schritt 1 bestimmte Grenze. Beispiele:
+For the commit range, use the boundary determined in Step 1. Examples:
 
 ```bash
-# Variante A: Konversationskontext sagt "seit Commit <SHA>"
+# Variant A: conversation context says "since commit <SHA>"
 git log --oneline <SHA>..HEAD
 
-# Variante B: $ARGUMENTS hat einen Zeithinweis (in --since umgesetzt)
-git log --oneline --since="<übersetzter Zeithinweis>"
+# Variant B: $ARGUMENTS has a time hint (translated to --since)
+git log --oneline --since="<translated time hint>"
 
-# Variante C: Fallback (Session-Grenze unsicher)
+# Variant C: fallback (session boundary uncertain)
 git log --oneline -20
 ```
 
-Geänderte Dateien für denselben Range: `git log --name-only --pretty=format: <range> | sort -u`.
+Changed files for the same range: `git log --name-only --pretty=format: <range> | sort -u`.
 
 ```bash
-# Aktuell offene / uncommittete Änderungen
+# Currently uncommitted changes
 git status --short
 
-# Offene TODOs im Code (häufige Patterns, inkl. ungetrackter Dateien)
+# Open TODOs in code (common patterns, includes untracked files)
 git grep --untracked -n "TODO\|FIXME\|HACK\|XXX\|NOCOMMIT" -- ':!*.lock' ':!node_modules' 2>/dev/null | head -40
 ```
 
-Lies optional relevante Dateien, die durch die Git-Daten als zentral identifiziert werden
-(z.B. kürzlich stark veränderte Dateien, CLAUDE.md falls vorhanden).
+Optionally read files the git data identifies as central (e.g. files with the largest churn in the range, `CLAUDE.md` if present).
 
-## Schritt 3: HANDOFF.md schreiben
+## Step 3: Write HANDOFF.md
 
-**Output-Verzeichnis sicherstellen:**
+**Ensure the output directory exists:**
 
 ```bash
 mkdir -p outputs
 ```
 
-**Existierende Datei prüfen:**
+**Check for an existing file:**
 
-- Existiert `outputs/HANDOFF.md` schon → **Default: neuen datierten Abschnitt oben anhängen** (alte Abschnitte bleiben erhalten).
-- Nur dann fragen, wenn der User eine andere Strategie signalisiert ("ersetzen", "neu schreiben").
+- If `outputs/HANDOFF.md` exists → **default: prepend a new dated section at the top** (old sections stay intact).
+- Only ask the user when they signal a different strategy ("replace", "rewrite").
 
-**Dateiinhalt erzeugen** anhand des folgenden Schemas. **Wichtig:** Die HTML-Kommentare (`<!-- ... -->`)
-sind Anweisungen für dich — sie gehören **nicht** in die finale Datei. Ersetze jeden Kommentar durch den
-ausgefüllten Inhalt oder lasse den Abschnitt mit `_(keine)_` leer.
+**Generate the file contents** using the schema below. **Important:** the HTML comments (`<!-- ... -->`) are instructions for you — they **must not** appear in the final file. Replace each comment with the actual content, or leave the section as `_(none)_`.
+
+Section headers in the template are shown in English; translate them to the user's request language when emitting the file.
 
 ```markdown
-# Session Handoff — {DATUM_UTC}
+# Session Handoff — {DATE_UTC}
 
-> Generiert von `/session-handoff` · Repo: {REPO-NAME} · Branch: {BRANCH}
-
----
-
-## Was wurde implementiert
-
-<!-- Liste der konkreten Änderungen dieser Session, gruppiert nach Feature/Bereich.
-     Jeder Punkt sollte klar machen: Was? Wo (Datei/Modul)? -->
-
-- ...
-
-## Commits dieser Session
-
-<!-- Die relevanten Git-Commits als kompakte Liste -->
-
-| Hash | Nachricht |
-| ---- | --------- |
-| ...  | ...       |
-
-## Uncommitted Änderungen (WIP)
-
-<!-- Automatisch aus `git status --short` befüllt — zeigt, was noch nicht committed wurde.
-     Falls keine uncommitteten Änderungen: `_(keine)_` schreiben. -->
-
-- ...
-
-## Wichtige Entscheidungen
-
-<!-- Architektur- oder Design-Entscheidungen, die getroffen wurden — und WARUM.
-     Wichtig: auch verworfene Alternativen kurz nennen, damit die nächste Session
-     nicht dieselben Irrwege geht. -->
-
-- **Entscheidung:** ...
-  **Begründung:** ...
-
-## Offene Fragen
-
-<!-- Was ist ungeklärt? Was müsste noch besprochen, recherchiert oder entschieden werden?
-     Konkret und umsetzbar formulieren. -->
-
-- [ ] ...
-
-## Offene TODOs im Code
-
-<!-- Automatisch aus `git grep TODO/FIXME` befüllt — nur relevante, keine alten -->
-
-- [ ] `datei.ts:42` — ...
-
-## Empfohlene nächste Schritte
-
-<!-- Priorisierte Aufgaben für die nächste Session. Erste Priorität oben.
-     Jeder Schritt sollte sofort ausführbar sein (kein vages "weiter machen"). -->
-
-- [ ] ...
-- [ ] ...
-- [ ] ...
+> Generated by `/session-handoff` · Repo: {REPO-NAME} · Branch: {BRANCH}
 
 ---
 
-_Letzte Aktualisierung: {DATUM_UTC}_
+## What was implemented
+
+<!-- List of concrete changes in this session, grouped by feature/area.
+     Each point should make clear: what? where (file/module)? -->
+
+- ...
+
+## Commits in this session
+
+<!-- The relevant git commits as a compact list -->
+
+| Hash | Message |
+| ---- | ------- |
+| ...  | ...     |
+
+## Uncommitted changes (WIP)
+
+<!-- Auto-filled from `git status --short` — shows what is not yet committed.
+     If nothing is uncommitted: write `_(none)_`. -->
+
+- ...
+
+## Key decisions
+
+<!-- Architecture or design decisions that were made — and WHY.
+     Important: also briefly name rejected alternatives so the next
+     session does not retrace the same dead ends. -->
+
+- **Decision:** ... **Rationale:** ...
+
+## Open questions
+
+<!-- What is unresolved? What still needs discussion, research, or a decision?
+     Phrase concretely and actionably. -->
+
+- [ ] ...
+
+## Open TODOs in code
+
+<!-- Auto-filled from `git grep TODO/FIXME` — only relevant ones, no stale entries -->
+
+- [ ] `file.ts:42` — ...
+
+## Recommended next steps
+
+<!-- Prioritized tasks for the next session. Top priority first.
+     Each step should be immediately actionable (no vague "continue"). -->
+
+- [ ] ...
+- [ ] ...
+- [ ] ...
+
+---
+
+_Last updated: {DATE_UTC}_
 ```
 
-### Hinweise zum Ausfüllen
+### Notes on filling the schema
 
-**Was wurde implementiert:** Leite dies aus den Git-Commits und geänderten Dateien ab.
-Fasse zusammen, was logisch zusammengehört — nicht jeden Commit einzeln auflisten,
-sondern nach Feature/Bereich gruppieren.
+**What was implemented:** derive from the git commits and changed files. Summarize what logically belongs together — do not list every commit individually, group by feature/area.
 
-**Entscheidungen:** Schreibe auch auf, was _nicht_ umgesetzt wurde und warum.
-Diese Information ist oft wertvoller als die Beschreibung des Umgesetzten.
+**Decisions:** also write down what was _not_ implemented and why. That information is often more valuable than the description of what was done.
 
-**Uncommitted Änderungen:** Befülle den Abschnitt mit der Ausgabe von `git status --short`.
-Falls keine uncommitteten Änderungen vorhanden sind, schreibe `_(keine)_`.
+**Uncommitted changes:** fill the section with `git status --short`. If nothing is uncommitted, write `_(none)_`.
 
-**Offene TODOs:** Filtere `git grep`-Ergebnisse — nur TODOs, die in dieser Session
-entstanden oder relevant für die nächsten Schritte sind. Alte TODOs in unberührten Dateien
-weglassen.
+**Open TODOs:** filter the `git grep` output — keep only TODOs that arose in this session or that matter for the next steps. Drop old TODOs in untouched files.
 
-**Nächste Schritte:** Sei konkret. Statt "Tests schreiben" lieber
-"Unit-Tests für `AuthService.login()` in `tests/auth.test.ts` schreiben".
+**Next steps:** be concrete. Instead of "write tests", write "add unit tests for `AuthService.login()` in `tests/auth.test.ts`".
 
-**Optionale Argumente (`$ARGUMENTS`):** Falls der Nutzer Fokusthemen, Notizen oder einen Zeithinweis
-übergeben hat, berücksichtige diese in Schritt 1 (Session-Grenze) und beim Priorisieren der nächsten
-Schritte.
+**Optional arguments (`$ARGUMENTS`):** if the user passed focus topics, notes, or a time hint, factor them into Step 1 (session boundary) and into prioritizing the next steps.
 
-## Schritt 4: Bestätigung
+## Step 4: Confirmation
 
-Teile dem Nutzer mit:
+Tell the user:
 
-- Pfad der erstellten/aktualisierten Datei (`outputs/HANDOFF.md`)
-- Kurze Zusammenfassung: wie viele Commits, wie viele offene Fragen, wie viele nächste Schritte
-- Ob ein neuer Abschnitt angehängt oder die Datei neu erstellt wurde
+- Path of the created/updated file (`outputs/HANDOFF.md`)
+- Short summary: how many commits, how many open questions, how many next steps
+- Whether a new section was prepended or the file was newly created
 
-## Verwandte Skills
+## Related skills
 
-- `agent-context-update` — wenn projekt-übergreifendes Wissen aus dieser Session in den Agent-Context fließen soll, ergänzend zum Handoff.
-- `branch-review` — wenn vor dem Handoff noch ein Code-Review der Session-Änderungen gewünscht ist.
+- `agent-context-update` — when project-spanning knowledge from this session should flow into the Agent-Context alongside the handoff.
+- `branch-review` — when a code review of the session changes is wanted before the handoff.

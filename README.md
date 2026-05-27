@@ -31,6 +31,7 @@ npx skills add lx-wnk/skills@branch-review
 | [branch-review](skills/branch-review/SKILL.md) | Multi-agent review of branch diff — code/security/SEO/legal/UX/perf; optional `--apply-fixes` mode | `/branch-review [base-branch] [--apply-fixes]` |
 | [full-project-review](skills/full-project-review/SKILL.md) | Multi-agent audit of the whole project (HEAD state, all repos) | `/full-project-review` |
 | [obsidian](skills/obsidian/SKILL.md) | Obsidian vault access via Local REST API — read, search, create, update notes | `/obsidian [search query or note path]` |
+| [session-handoff](skills/session-handoff/SKILL.md) | Generate a structured `outputs/HANDOFF.md` at the end of a session — changes, decisions, next steps | `/session-handoff [focus topics or time hint]` |
 | [tech-gazette](skills/tech-gazette/SKILL.md) | Generate a daily or weekly tech news briefing as a self-contained HTML newspaper | `/tech-gazette [--daily\|--weekly] [customers]` |
 
 ## Contributing
