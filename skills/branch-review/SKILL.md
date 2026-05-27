@@ -1,20 +1,38 @@
 ---
 name: branch-review
-description: Vollumfängliches Multi-Agenten-Code-Review der Änderungen zwischen aktuellem Branch und einem Basis-Branch (Default main, Fallback master/develop). Spawnt parallele Subagenten für Code-Quality, Architektur, Security (OWASP/CWE/CVSS), SEO, Datenschutz/Recht, UI/UX (WCAG) und Performance und konsolidiert deren Reports in eine vollständige Findings.md mit Priorisierung P0–P4 und begründeten Empfehlungen. Optional (`--apply-fixes`) wendet danach klare Fixes direkt an und eskaliert Design-Entscheidungen an den User. Nutze diesen Skill bei "review this branch", "review meinen branch", "PR review", "diff review", "branch review", "review die änderungen", "review my PR", "code review für branch", "review what changed", "review and fix", "fix PR issues", oder wenn ein PR-Link, eine Branch-Range oder ein Diff zur Prüfung gepostet wird — auch ohne explizites Wort "review", wenn der Kontext klar ist (z.B. "schau dir den branch an"). NICHT triggern für ein Audit des gesamten Projekts ohne Branch-Bezug — dafür gibt es full-project-review.
+description: Vollständiges Multi-Agenten-Code-Review AUSSCHLIESSLICH der Änderungen zwischen aktuellem Branch und einem Basis-Branch (Default main, Fallback master/develop) — kein Audit des gesamten Repos, sondern tiefes Review nur der diff-berührten Stellen. Spawnt parallele Subagenten für Code-Quality, Architektur, Security (OWASP/CWE/CVSS), SEO, Datenschutz/Recht, UI/UX (WCAG) und Performance und konsolidiert deren Reports in eine vollständige Findings.md mit Priorisierung P0–P4 und begründeten Empfehlungen. Optional (`--apply-fixes`) wendet danach klare Fixes direkt an und eskaliert Design-Entscheidungen an den User. Nutze diesen Skill bei "review this branch", "review meinen branch", "PR review", "diff review", "branch review", "review die änderungen", "review my PR", "code review für branch", "review what changed", "review and fix", "fix PR issues", oder wenn ein PR-Link, eine Branch-Range oder ein Diff zur Prüfung gepostet wird — auch ohne explizites Wort "review", wenn der Kontext klar ist (z.B. "schau dir den branch an"). NICHT triggern für ein Audit des gesamten Projekts ohne Branch-Bezug — dafür gibt es full-project-review.
 argument-hint: "[base-branch] [--apply-fixes]"
 ---
 
 # Branch Review (Multi-Agenten)
 
+## DIFF-DISZIPLIN (oberste Regel)
+
+**Der Diff ist der einzige Anker.** Dieses Review prüft NICHT das ganze Projekt — es prüft die Änderungen zwischen `<base>` und `HEAD`. Wenn dieser Skill triggert, ohne dass ein Diff existiert: abbrechen und auf `full-project-review` verweisen.
+
+Erlaubte Lesezugriffe:
+
+1. Alle vom Diff berührten Dateien — vollständig (Kontext rund um Änderung).
+2. Direkt referenzierte Imports/Aufrufer/Callsites der geänderten Symbole — gezielt, nicht flächig.
+3. Konfig-/Manifest-Dateien zur Tech-Stack-Erkennung.
+4. Systemweite Stellen NUR wenn eine Diff-Änderung sie nachweislich betrifft (z.B. neue Auth-Middleware → andere Routen prüfen). Im Finding markieren: `Diff-Auslöser: <Datei:Zeile>`.
+
+Verboten:
+
+- Repo-weite Scans ohne Diff-Bezug ("ich prüfe mal alle Controller").
+- Findings zu unverändertem Legacy-Code, der nicht vom Diff angefasst wird.
+- Bestehende Tech-Debt-Listen ohne Verbindung zum aktuellen Diff.
+
 ## Rolle
 
-Du bist Orchestrator eines Multi-Agenten-Reviews. Du selbst schreibst KEINEN Review-Inhalt — du planst, delegierst an Subagenten (Task-Tool), wartest auf deren Reports und konsolidierst sie. Subagenten dürfen ihrerseits weitere Subagenten spawnen, wenn ihr Thema zu groß ist.
+Du bist Orchestrator eines Multi-Agenten-Reviews. Du selbst schreibst KEINEN Review-Inhalt — du planst, delegierst an Subagenten (Task-Tool), wartest auf deren Reports und konsolidierst sie. Subagenten dürfen ihrerseits weitere Subagenten spawnen, wenn ihr Thema zu groß ist — alle Sub-Subagenten erben die Diff-Disziplin oben.
 
 ## Scope
 
 **Code-Review-Tiefe:** Nur die Änderungen zwischen aktuellem Branch und Basis-Branch (`git diff <base>...<HEAD>`).
 
 **Basis-Branch ermitteln** (in dieser Reihenfolge):
+
 1. Wenn der User einen Basis-Branch nennt → den nehmen.
 2. Wenn ein PR existiert → dessen Target-Branch.
 3. Default: `main`, Fallback `master`, Fallback `develop`.
@@ -98,17 +116,56 @@ Pfad: im Outputs-/Workspace-Ordner ablegen (`outputs/Findings.md` oder gleichwer
 - **Status:** verifiziert | Hypothese — Verifikation nötig
 ```
 
+## Subagent-Prompt-Template (verbindlich)
+
+Jeder gespawnte Subagent erhält EXAKT diese Struktur. Der Orchestrator füllt die Platzhalter — nichts auslassen, nichts paraphrasieren.
+
+```
+ROLLE: <Code-Quality | Architektur | Security | SEO | Recht | UI/UX | Performance>-Agent
+
+DIFF-DISZIPLIN (NICHT VERHANDELBAR):
+- Anker ist der unten eingebettete Diff. Findings NUR zu Code, der vom Diff berührt wird ODER nachweislich von ihm betroffen ist.
+- Verboten: repo-weite Scans, Findings zu unverändertem Code, generische Best-Practice-Listen ohne Diff-Bezug.
+- Erlaubt für deine Rolle systemweit: <pro Rolle ausfüllen — siehe Liste unten>. Jede systemweite Erweiterung im Finding kennzeichnen: "Diff-Auslöser: <Datei:Zeile>".
+
+ALLOWED-FILES (Whitelist — diese darfst du voll lesen):
+<git diff --name-only Output, eine Datei pro Zeile>
+
+TECH-STACK: <Detection-Ergebnis>
+BASE-BRANCH: <base>     HEAD-SHA: <sha>     MERGE-BASE: <sha>
+
+DIFF (unified):
+<vollständiger `git diff <base>...<HEAD>` Output ODER Hinweis "siehe Datei <pfad>" wenn zu groß>
+
+PFLICHTEN:
+- Vollständigkeit innerhalb des Diffs (kein Auslassen, auch P3/P4).
+- Jedes Finding mit Pflichtfeldern nach Schema (siehe Haupt-Skill).
+- Halluzinations-Verbot: nicht zugängliche Stellen → Eskalations-Block, nicht raten.
+- Wenn dein Scope vom Diff nicht berührt wird: Kurz-Report mit Begründung, kein Schweigen.
+
+OUTPUT: Markdown-Report mit Findings nach Schema + Coverage-Notiz (was geprüft, was nicht + Grund).
+```
+
+**Systemweite Erweiterungen je Rolle** (was außerhalb des Diffs gelesen werden darf, wenn Diff-Auslöser nachweisbar):
+
+- Security: globale Auth-/Crypto-/Header-Config, Dependency-Manifest.
+- Architektur: direkte Aufrufer/Aufgerufene der geänderten Symbole.
+- Performance: Query-Pfade, die von geänderten Modellen/Repos genutzt werden.
+- Recht/SEO/UX: Pflichtseiten/Routes nur wenn Diff sie berührt oder neue user-facing Flows einführt.
+- Code-Quality: nur Allowed-Files.
+
 ## Ausführungs-Reihenfolge (Orchestrator)
 
 1. **Diff ermitteln** — Basis-Branch bestimmen (siehe Scope), `git diff <base>...<HEAD>` und `git diff --name-only <base>...<HEAD>` ausführen, Diff-Statistik festhalten. Bei leerem Diff abbrechen und auf `full-project-review` verweisen.
 2. **Tech-Stack-Detection** — Manifest-Dateien lesen, Stack-Info festhalten.
 3. **TodoList anlegen** mit den 7 Subagenten-Tasks.
-4. **Subagenten parallel spawnen** (in einem Message-Block). Jedem Subagent mitgeben: Diff, geänderte Dateien, Tech-Stack, Vollständigkeits-Pflicht, "Halluzinations-Verbot mit Eskalations-Block".
+4. **Subagenten parallel spawnen** (in einem Message-Block). Jeden Subagent nach dem **Subagent-Prompt-Template** oben briefen — Diff, Allowed-Files-Whitelist, Tech-Stack und systemweite Erweiterungs-Regeln einsetzen.
 5. **Reports konsolidieren** — Duplikate mergen (aber nicht löschen — gemergte Findings referenzieren ihre Quellen), einheitlich priorisieren.
 6. **Findings.md schreiben.**
 7. **Verifikations-Pass:**
    - Hat JEDES Finding alle Pflichtfelder?
    - Ist JEDES Finding begründet?
+   - **Hat JEDES Finding einen Diff-Bezug?** Findings ohne Diff-Auslöser → entfernen oder als Diff-Auslöser nachweisen.
    - Stimmt die Anzahl im Index mit den Detail-Abschnitten überein?
    - Coverage-Report vollständig (auch das, was NICHT geprüft wurde)?
 8. **Link zur fertigen Datei** zurückgeben.
@@ -138,11 +195,11 @@ Diese Phase wendet klare Fixes direkt auf den Branch an und eskaliert Design-Ent
 
 Für **jedes** Finding in `Findings.md` eine der drei Kategorien zuordnen:
 
-| Kategorie | Kriterien | Aktion |
-|---|---|---|
-| **Confident Fix** | Eindeutig ein Bug, eine offensichtliche Korrektur (z.B. Tippfehler in API-Path, Missing-Guard nach etabliertem Pattern, stale Doc widerspricht Code, undefined function, DRY-Violation mit klarem Extraktionsziel) | direkt patchen |
-| **Design Decision** | Mehrere valide Ansätze, Architekturwirkung, Scope-Frage, Security-Hardening-Tiefe | nicht patchen, eskalieren |
-| **Out of Auto-Fix Scope** | Test-Coverage, Linter-Style, Refactoring-Nice-to-have, Performance-Tuning ohne klares Ziel | nur listen, weder patchen noch eskalieren |
+| Kategorie                 | Kriterien                                                                                                                                                                                                          | Aktion                                    |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
+| **Confident Fix**         | Eindeutig ein Bug, eine offensichtliche Korrektur (z.B. Tippfehler in API-Path, Missing-Guard nach etabliertem Pattern, stale Doc widerspricht Code, undefined function, DRY-Violation mit klarem Extraktionsziel) | direkt patchen                            |
+| **Design Decision**       | Mehrere valide Ansätze, Architekturwirkung, Scope-Frage, Security-Hardening-Tiefe                                                                                                                                  | nicht patchen, eskalieren                 |
+| **Out of Auto-Fix Scope** | Test-Coverage, Linter-Style, Refactoring-Nice-to-have, Performance-Tuning ohne klares Ziel                                                                                                                         | nur listen, weder patchen noch eskalieren |
 
 Keine Mehrfach-Klassifikation. Wenn unsicher → Design Decision (eskalieren ist immer billiger als heimlich falsch fixen).
 
