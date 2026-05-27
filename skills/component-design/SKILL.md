@@ -94,7 +94,7 @@ Each proposal contains:
 - **Trade-offs:** testability, extensibility, complexity cost
 - **Effort:** rough gut feel, not estimates
 
-End with **Empfehlung** and reason.
+End with **Recommendation** and reason.
 
 Typical axes to vary:
 

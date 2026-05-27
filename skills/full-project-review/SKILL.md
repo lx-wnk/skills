@@ -1,118 +1,127 @@
 ---
 name: full-project-review
-description: Vollumfängliches Multi-Agenten-Audit des GESAMTEN Projekts (alle Repos / kompletter HEAD-Stand). Spawnt parallele Subagenten für Code-Quality, Architektur, Security (OWASP/CWE/CVSS), SEO, Datenschutz/Recht, UI/UX (WCAG) und Performance und konsolidiert deren Reports in eine vollständige Findings.md mit Priorisierung P0–P4 und begründeten Empfehlungen. Nutze diesen Skill bei "review the entire project", "vollumfängliches review", "review das ganze projekt", "full project audit", "audit the codebase", "comprehensive review", "code audit", "security audit", "compliance audit", "review everything", "DSGVO audit", "OWASP audit", oder wenn ein systematisches Audit ohne Branch-/Diff-Bezug gewünscht ist — auch wenn keine Änderungen anstehen, kein PR existiert oder der Branch leer ist. PR-/Diff-Status ist KEIN Abbruchgrund. NICHT triggern, wenn explizit nur Branch-Änderungen geprüft werden sollen — dafür gibt es branch-review.
+description: >-
+  Comprehensive multi-agent audit of the ENTIRE project (all repos / full HEAD state). Spawns parallel subagents
+  for code quality, architecture, security (OWASP/CWE/CVSS), SEO, privacy/legal, UI/UX (WCAG), and performance,
+  and consolidates their reports into a complete Findings.md with P0–P4 prioritization and reasoned recommendations.
+  Use this skill for "review the entire project", "full project audit", "audit the codebase", "comprehensive review",
+  "code audit", "security audit", "compliance audit", "review everything", "DSGVO audit", "OWASP audit",
+  or German equivalents "vollumfängliches review", "review das ganze projekt", "audit das projekt", "kompletter code-audit",
+  whenever a systematic audit without branch/diff context is requested — even when no changes are pending,
+  no PR exists, or the branch is empty. PR/diff status is NOT a blocker. DO NOT trigger when only branch changes
+  should be reviewed — use branch-review for that.
 ---
 
-# Full Project Review (Multi-Agenten)
+# Full Project Review (Multi-Agent)
 
-## Rolle
+## Role
 
-Du bist Orchestrator eines Multi-Agenten-Reviews. Du selbst schreibst KEINEN Review-Inhalt — du planst, delegierst an Subagenten (Task-Tool), wartest auf deren Reports und konsolidierst sie. Subagenten dürfen ihrerseits weitere Subagenten spawnen, wenn ihr Thema zu groß ist.
+You are the orchestrator of a multi-agent review. You yourself write NO review content — you plan, delegate to subagents (Task tool), wait for their reports, and consolidate them. Subagents may in turn spawn further subagents when their topic is too large.
 
 ## Scope
 
-**Code-Review-Tiefe:** GESAMTES Projekt (alle Repos / alles, was zum Projekt gehört). NICHT nur Branch-Diffs — das Audit prüft den HEAD-Stand des kompletten Codes.
+**Code-review depth:** the ENTIRE project (all repos / everything belonging to the project). NOT just branch diffs — the audit reviews the HEAD state of the complete code.
 
-**Das Audit wird IMMER ausgeführt** — auch wenn kein PR existiert, kein Diff vorhanden ist oder der Branch identisch zu main/master ist. PR-/Diff-Status ist KEIN Abbruchgrund. Wenn kein Diff existiert: Audit läuft auf dem aktuellen HEAD.
+**The audit is ALWAYS executed** — even when no PR exists, no diff is present, or the branch is identical to main/master. PR/diff status is NOT a blocker. If no diff exists: the audit runs on the current HEAD.
 
-**Analyse-Scope** (Security, OWASP, SEO, Datenschutz/Recht, UI/UX, Performance, Architektur): GESAMTES Projekt.
+**Analysis scope** (security, OWASP, SEO, privacy/legal, UI/UX, performance, architecture): the ENTIRE project.
 
-**Multi-Repo:** Wenn das Projekt aus mehreren Repos besteht, alle Repos einbeziehen. Liste der einbezogenen Repos im Coverage-Report dokumentieren. Wenn Zugriff auf ein Repo fehlt → als "nicht abgedeckt" listen, nicht raten.
+**Multi-repo:** if the project consists of multiple repos, include all of them. Document the list of included repos in the coverage report. If access to a repo is missing → list as "not covered", do not guess.
 
-**Live-Site (für SEO/Recht/UX):** Wenn eine Live-URL bekannt oder erfragbar ist, prüft sie der jeweilige Subagent zusätzlich. Sonst rein code-basiertes Audit (Templates/Routen/Configs) und im Coverage-Report vermerken.
+**Live site (for SEO/legal/UX):** if a live URL is known or can be obtained, the corresponding subagent inspects it additionally. Otherwise a pure code-based audit (templates/routes/configs); note this in the coverage report.
 
-**Sprache der Findings:** Sprache der User-Anfrage (Default). Code-Beispiele in Originalsprache.
+**Findings language:** the language of the user request (default). Code examples in their original language.
 
-**Jurisdiktion (für Datenschutz/Recht):** Aus User-Kontext / Projekt-README ableiten (Server-Standort, Zielmarkt, Impressum-Land). Bei Unklarheit User fragen — Default DSGVO/EU. Mehrere Jurisdiktionen sind möglich (z.B. EU + US) und werden separat behandelt.
+**Jurisdiction (for privacy/legal):** derive from user context / project README (server location, target market, imprint country). If unclear, ask the user — default GDPR/EU. Multiple jurisdictions are possible (e.g. EU + US) and treated separately.
 
-## Tech-Stack-Detection
+## Tech-Stack Detection
 
-Vor dem Spawnen der Subagenten: Tech-Stack pro Repo aus Manifest-Dateien erkennen (`package.json`, `composer.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, `pom.xml`, `Gemfile`, etc.). Jedem Subagent diese Info mitgeben, damit er die richtigen Konventionen und Tool-Checks anwendet (Linter-Configs, Framework-Best-Practices, sprach-spezifische Sicherheits-Patterns). Wenn projektspezifische Konventions-Skills im Plugin-Set vorhanden sind (z.B. Vue-, Nuxt-, Shopware-, Django-Skills), diese den passenden Subagenten erwähnen.
+Before spawning subagents: detect the tech stack per repo from manifest files (`package.json`, `composer.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, `pom.xml`, `Gemfile`, etc.). Pass this info to each subagent so it applies the right conventions and tool checks (linter configs, framework best practices, language-specific security patterns). When project-specific convention skills are available in the plugin set (e.g. Vue, Nuxt, Shopware, Django skills), mention them to the relevant subagent.
 
-## Vollständigkeits-Pflicht
+## Completeness Mandate
 
-- Es wird NICHTS weggelassen. Jedes gefundene Issue gehört in den Report, auch P3/P4 (Low/Info).
-- Keine "Top 10"-Filterung. Subagenten dürfen Findings nicht aussortieren, nur priorisieren.
-- Wenn ein Subagent eine Datei/Modul nicht prüfen konnte: explizit als "nicht abgedeckt" listen — keine stillen Lücken.
-- Jedes Finding MUSS begründet sein. Unbegründete Einträge sind unzulässig — lieber als Hypothese markieren als ohne Beleg.
-- **Audit-Disziplin:** Bei großen Codebases ist Vollständigkeit das Ziel, aber pragmatisch — Subagenten dürfen Modul-/Verzeichnis-weise vorgehen und ihren Fortschritt protokollieren. Was nicht erreicht wurde, kommt in den Coverage-Report, nicht heimlich unter den Tisch.
+- Nothing is omitted. Every issue found belongs in the report, including P3/P4 (low/info).
+- No "top 10" filtering. Subagents may not drop findings, only prioritize them.
+- If a subagent cannot inspect a file/module: list it explicitly as "not covered" — no silent gaps.
+- Every finding MUST be justified. Unjustified entries are not allowed — mark as hypothesis instead of citing without evidence.
+- **Audit discipline:** for large codebases completeness is the goal, but pragmatic — subagents may proceed module/directory-wise and log their progress. What was not reached goes into the coverage report, not quietly under the rug.
 
-## Subagenten-Team (mindestens diese Rollen, parallel spawnen)
+## Subagent Team (at minimum these roles, spawn in parallel)
 
-1. **Code-Quality-Agent** — Lesbarkeit, Naming, Komplexität, tote Pfade, Tests, Coverage-Gaps, Konventionen des erkannten Tech-Stacks. Reviewt den GESAMTEN Code-Stand systematisch.
-2. **Architektur-Agent** — Schichten, Kopplung, Kohäsion, Trennung von Concerns, Skalierbarkeit, Anti-Patterns, Tech-Debt, Module-Boundaries, Dependency-Graph. Liefert ADR-Vorschläge bei größeren Themen.
-3. **Security-Agent** (OWASP Top 10 + ASVS) — Injection, AuthN/AuthZ, Crypto, SSRF, Deserialization, Secrets-in-Repo, Dependency-CVEs (`npm audit`, `composer audit`, `pip-audit`, `gh dependabot`, `osv-scanner`, etc.), Header (CSP/HSTS/COOP/COEP), Rate-Limiting, Logging, Error-Handling, Input-Validation, File-Upload-Handling. Pro Finding: CWE-Referenz, OWASP-Kategorie, CVSS-Schätzung, PoC-Skizze.
-4. **SEO-Agent** — Titles/Meta, Canonicals, hreflang, robots.txt, sitemap.xml, Structured Data (JSON-LD), OpenGraph, Twitter Cards, Core Web Vitals, SSR-Korrektheit, Indexierbarkeit, interne Verlinkung. Live-Site-Check wenn URL verfügbar.
-5. **Datenschutz/Recht-Agent** — Cookie-Consent (TTDSG/DSGVO bzw. lokales Pendant), Tracking vor Consent, Auftragsverarbeiter, Pflichtseiten (Impressum/Datenschutzerklärung/AGB je nach Jurisdiktion), Drittland-Übermittlung, Server-Standort, Footer-Pflichtangaben, Form-DSE-Hinweise. Barrierefreiheits-Recht (z.B. BFSG für DE, EAA für EU, ADA für US — je nach Jurisdiktion).
-6. **UI/UX-Agent** — Heuristiken (Nielsen), Hierarchie, Konsistenz, Mobile, Touch-Targets, Fehlermeldungen, Empty/Loading States, Microcopy, Barrierefreiheit (WCAG 2.1 AA — Kontrast, Tastatur, Screenreader, ARIA, Fokus-Reihenfolge, Alt-Texte).
-7. **Performance-Agent** — Bundle-Size, LCP/INP/CLS, Bilder (Format/Größe/lazy), Caching-Strategie, CDN, N+1-Queries, fehlende DB-Indizes, kritische Render-Pfade, Render-Blocking, Memory-Leaks, ungebundene Loops.
+1. **Code-Quality Agent** — readability, naming, complexity, dead paths, tests, coverage gaps, conventions of the detected tech stack. Reviews the ENTIRE code state systematically.
+2. **Architecture Agent** — layers, coupling, cohesion, separation of concerns, scalability, anti-patterns, tech debt, module boundaries, dependency graph. Provides ADR proposals for larger topics.
+3. **Security Agent** (OWASP Top 10 + ASVS) — injection, AuthN/AuthZ, crypto, SSRF, deserialization, secrets-in-repo, dependency CVEs (`npm audit`, `composer audit`, `pip-audit`, `gh dependabot`, `osv-scanner`, etc.), headers (CSP/HSTS/COOP/COEP), rate limiting, logging, error handling, input validation, file-upload handling. Per finding: CWE reference, OWASP category, CVSS estimate, PoC sketch.
+4. **SEO Agent** — titles/meta, canonicals, hreflang, robots.txt, sitemap.xml, structured data (JSON-LD), OpenGraph, Twitter Cards, Core Web Vitals, SSR correctness, indexability, internal linking. Live-site check when URL available.
+5. **Privacy/Legal Agent** — cookie consent (TTDSG/GDPR or local equivalent), tracking before consent, data processors, mandatory pages (imprint/privacy policy/terms depending on jurisdiction), third-country transfers, server location, footer mandatory fields, form privacy notices. Accessibility law (e.g. BFSG for DE, EAA for EU, ADA for US — depending on jurisdiction).
+6. **UI/UX Agent** — heuristics (Nielsen), hierarchy, consistency, mobile, touch targets, error messages, empty/loading states, microcopy, accessibility (WCAG 2.1 AA — contrast, keyboard, screen reader, ARIA, focus order, alt text).
+7. **Performance Agent** — bundle size, LCP/INP/CLS, images (format/size/lazy), caching strategy, CDN, N+1 queries, missing DB indexes, critical render paths, render blocking, memory leaks, unbounded loops.
 
-## Arbeitsweise jedes Subagenten
+## How Each Subagent Works
 
-- **Keine Halluzinationen.** Wenn ein Repo/Tool/Datei nicht zugänglich ist: Eskalations-Block schreiben ("Zugriff fehlt: …") statt zu raten.
-- **Jedes Finding belegen** mit: Datei + Zeile(n) ODER URL + DOM-Selektor / Screenshot-Hinweis. Keine vagen Aussagen.
-- **Bei Unsicherheit:** als "Hypothese — Verifikation nötig" markieren, aber trotzdem listen.
-- **Vollständigkeit > Kürze.** Filterung passiert ausschließlich über die Prio-Spalte, nicht durch Weglassen.
-- **PR-Abwesenheit ist KEIN Abbruchgrund.** Reviewt wird der HEAD-Stand des Codes, unabhängig davon ob ein PR offen ist.
+- **No hallucinations.** If a repo/tool/file is inaccessible: write an escalation block ("Access missing: …") instead of guessing.
+- **Back every finding** with: file + line(s) OR URL + DOM selector / screenshot hint. No vague statements.
+- **When uncertain:** mark as "Hypothesis — verification needed", but still list it.
+- **Completeness > brevity.** Filtering happens exclusively via the priority column, not by omission.
+- **PR absence is NOT a blocker.** The HEAD state of the code is reviewed, regardless of whether a PR is open.
 
 ## Deliverable: Findings.md
 
-Pfad: im Outputs-/Workspace-Ordner ablegen (`outputs/Findings.md` oder gleichwertig).
+Path: store in the outputs/workspace folder (`outputs/Findings.md` or equivalent).
 
-### Aufbau
+### Structure
 
-1. **Frontmatter** — Datum, Audit-Scope ("Full Project"), einbezogene Repos, Commit-SHAs je Repo, PR-Status (vorhanden/keiner — kein Blocker), Tech-Stack je Repo, Reviewer-Agenten-Liste, geprüfte Pfade, Live-URL falls geprüft.
-2. **Original-Prompt** — verbatim, in Code-Block.
-3. **Executive Summary** (max. 15 Zeilen) — Sicherheits-Ampel (rot/gelb/grün + 1-Satz-Begründung), Top-3-Risiken, Top-3 Quick Wins, Findings-Anzahl je Prio (z.B. "P0: 2, P1: 7, P2: 23, …"), Compliance-Status je relevanter Norm/Jurisdiktion (DSGVO, OWASP, WCAG, …) als kurze Ampel.
-4. **Coverage-Report** — Was wurde geprüft (Repos, Pfade, Tools, Versionen), was wurde NICHT geprüft + Grund (Zugriff, Zeit, out-of-scope).
-5. **Findings-Index-Tabelle** — alle Findings sortiert nach Priorität (Spalten: ID, Prio, Kategorie, Titel, Ort, Aufwand).
-6. **Findings im Detail** — VOLLSTÄNDIG, eines pro Abschnitt (Schema unten).
-7. **Anhang** — Tool-/Methoden-Liste, Versionen, Referenzen, Glossar.
+1. **Frontmatter** — date, audit scope ("Full Project"), included repos, commit SHAs per repo, PR status (present/none — not a blocker), tech stack per repo, list of reviewer agents, paths inspected, live URL if checked.
+2. **Original prompt** — verbatim, in a code block.
+3. **Executive Summary** (max. 15 lines) — security traffic light (red/yellow/green + 1-sentence justification), top 3 risks, top 3 quick wins, finding counts per priority (e.g. "P0: 2, P1: 7, P2: 23, …"), compliance status per relevant standard/jurisdiction (GDPR, OWASP, WCAG, …) as a short traffic light.
+4. **Coverage Report** — what was checked (repos, paths, tools, versions), what was NOT checked + reason (access, time, out-of-scope).
+5. **Findings Index Table** — all findings sorted by priority (columns: ID, Prio, Category, Title, Location, Effort).
+6. **Findings in detail** — COMPLETE, one per section (schema below).
+7. **Appendix** — tool/method list, versions, references, glossary.
 
-### Priorisierung
+### Prioritization
 
-- **P0 — Critical:** aktiv ausnutzbar, Datenleck, Recht-Verstoß mit Bußgeldrisiko.
-- **P1 — High:** ausnutzbar mit Vorbedingungen, klares Compliance-Risiko.
-- **P2 — Medium:** schlechte Praxis, kein direkter Exploit, UX-Schmerzpunkt.
-- **P3 — Low:** Nice-to-have, kosmetisch, Tech-Debt.
-- **P4 — Info:** Beobachtung oder bestätigter Standard, kein Handlungsbedarf — trotzdem listen.
+- **P0 — Critical:** actively exploitable, data leak, legal violation with fine risk.
+- **P1 — High:** exploitable with preconditions, clear compliance risk.
+- **P2 — Medium:** bad practice, no direct exploit, UX pain point.
+- **P3 — Low:** nice to have, cosmetic, tech debt.
+- **P4 — Info:** observation or confirmed standard, no action needed — list anyway.
 
-### Schema pro Finding (alle Felder Pflicht)
+### Per-Finding Schema (all fields required)
 
 ```
-### [P{0-4}] [Kategorie] Kurztitel
-- **Ort:** Pfad:Zeile / URL
-- **Beschreibung:** Was ist das Problem?
-- **Begründung / Warum kritisch:** Impact + Ausnutzungs-/Eintrittsszenario.
-  Auch bei P3/P4 ist eine Begründung Pflicht ("warum überhaupt erwähnt").
-- **Referenz:** CWE/OWASP/WCAG/DSGVO-Artikel/Best-Practice-Quelle
-- **Empfehlung:** konkrete Lösung (Code-Snippet wenn sinnvoll)
-- **Warum besser so:** technische/rechtliche Begründung der Empfehlung
-- **Aufwand:** S / M / L (grobe Schätzung)
-- **Status:** verifiziert | Hypothese — Verifikation nötig
+### [P{0-4}] [Category] Short title
+- **Location:** path:line / URL
+- **Description:** what is the problem?
+- **Justification / why critical:** impact + exploitation/occurrence scenario.
+  Even for P3/P4 a justification is mandatory ("why mentioned at all").
+- **Reference:** CWE/OWASP/WCAG/GDPR article/best-practice source
+- **Recommendation:** concrete fix (code snippet when useful)
+- **Why better:** technical/legal justification of the recommendation
+- **Effort:** S / M / L (rough estimate)
+- **Status:** verified | hypothesis — verification needed
 ```
 
-## Ausführungs-Reihenfolge (Orchestrator)
+## Execution Order (Orchestrator)
 
-1. **Repo-Inventur** — Alle zum Projekt gehörenden Repos/Pfade ermitteln (Mono-Repo? Multi-Repo? Sub-Module?). Liste festhalten. PR-Status nur informativ erfassen, NICHT als Voraussetzung behandeln — Audit startet so oder so.
-2. **Tech-Stack-Detection** pro Repo (Manifest-Dateien lesen).
-3. **Jurisdiktion klären** (aus README/Impressum/Server-Konfig) — bei Unklarheit User fragen.
-4. **TodoList anlegen** mit den 7 Subagenten-Tasks.
-5. **Subagenten parallel spawnen** (in einem Message-Block). Jedem Subagent mitgeben: Repo-Liste, Tech-Stack, Jurisdiktion, Live-URL (falls vorhanden), Vollständigkeits-Pflicht, "Review läuft auf HEAD, nicht auf Diff", "Halluzinations-Verbot mit Eskalations-Block".
-6. **Reports konsolidieren** — Duplikate mergen (aber nicht löschen — gemergte Findings referenzieren ihre Quellen), einheitlich priorisieren, Cross-References zwischen verwandten Findings ergänzen.
-7. **Findings.md schreiben.**
-8. **Verifikations-Pass:**
-   - Hat JEDES Finding alle Pflichtfelder?
-   - Ist JEDES Finding begründet?
-   - Stimmt die Anzahl im Index mit den Detail-Abschnitten überein?
-   - Coverage-Report vollständig (auch das, was NICHT geprüft wurde)?
-   - Ist die Compliance-Ampel im Executive Summary durch konkrete Findings unterlegt?
-9. **Link zur fertigen Datei** zurückgeben.
+1. **Repo inventory** — determine all repos/paths belonging to the project (monorepo? multi-repo? sub-modules?). Record the list. Note PR status only informationally, NOT as a precondition — the audit starts regardless.
+2. **Tech-stack detection** per repo (read manifest files).
+3. **Clarify jurisdiction** (from README/imprint/server config) — ask the user when unclear.
+4. **Create TodoList** with the 7 subagent tasks.
+5. **Spawn subagents in parallel** (in one message block). Pass to each subagent: repo list, tech stack, jurisdiction, live URL (if available), completeness mandate, "review runs on HEAD, not on diff", "no hallucinations, escalation block instead".
+6. **Consolidate reports** — merge duplicates (but don't delete them — merged findings reference their sources), prioritize uniformly, add cross-references between related findings.
+7. **Write Findings.md.**
+8. **Verification pass:**
+   - Does EVERY finding have all required fields?
+   - Is EVERY finding justified?
+   - Does the count in the index match the detail sections?
+   - Is the coverage report complete (including what was NOT checked)?
+   - Is the compliance traffic light in the executive summary backed by concrete findings?
+9. **Return the link** to the finished file.
 
-## Wichtig
+## Important
 
-- **Vollständigkeit ist nicht verhandelbar.** Wenn der Report kürzer wäre als die tatsächlichen Findings es erlauben → Fehler. Bei großen Codebases lieber Coverage-Report ehrlich mit "nicht erreicht: …" füllen als Findings unterschlagen.
-- **Begründung ist nicht verhandelbar.** Jeder Punkt erklärt, WARUM er drin steht und WARUM die Empfehlung besser ist. Das ist der Wert des Reports — eine Liste ohne Begründung ist Lärm.
-- **PR-Existenz ist nicht erforderlich.** Kein PR / kein Diff / leerer Branch → Audit läuft trotzdem auf dem gesamten Projekt-Code.
-- **Kein Sicherheits-Theater.** Keine generischen "nutze HTTPS"-Hinweise, wenn HTTPS bereits aktiv ist. Wenn ein Standard erfüllt ist → als P4 "bestätigt: …" einmalig vermerken, nicht ignorieren, aber auch nicht aufblähen.
-- **Audit-Disziplin.** Bei sehr großen Codebases pragmatisch arbeiten: Module/Verzeichnisse abklopfen, nicht jede Zeile sehen wollen — aber alles Nicht-Geprüfte transparent in den Coverage-Report.
+- **Completeness is non-negotiable.** If the report would be shorter than the actual findings allow → error. For large codebases, rather fill the coverage report honestly with "not reached: …" than suppress findings.
+- **Justification is non-negotiable.** Every entry explains WHY it is there and WHY the recommendation is better. That is the value of the report — a list without justification is noise.
+- **PR existence is not required.** No PR / no diff / empty branch → the audit still runs on the entire project code.
+- **No security theater.** No generic "use HTTPS" hints when HTTPS is already active. When a standard is met → note once as P4 "confirmed: …", do not ignore, but also do not inflate.
+- **Audit discipline.** For very large codebases work pragmatically: walk modules/directories rather than seeing every line — but everything not checked goes transparently into the coverage report.

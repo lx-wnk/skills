@@ -89,7 +89,7 @@ Typical open questions:
 
 ## Phase 5: Propose 2-3 Approaches
 
-Present each with a one-line headline, a diagram sketch (Mermaid if helpful), and pro/kontra. End with **Empfehlung** and reasoning.
+Present each with a one-line headline, a diagram sketch (Mermaid if helpful), and pros/cons. End with **Recommendation** and reasoning.
 
 Typical dimensions to vary across options:
 
