@@ -1,7 +1,6 @@
 {
-  "name": "lx-wnk-skills",
+  "name": "skills",
   "description": "Curated skills for AI coding agents — architecture design/review, component design/review, PR review-and-fix, tech-gazette, obsidian, and agent-context lifecycle.",
-  "version": "1.0.0",
   "author": {
     "name": "Alexander Wink"
   },

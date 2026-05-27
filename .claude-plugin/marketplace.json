@@ -3,7 +3,7 @@
   "description": "Curated skills for AI coding agents",
   "plugins": [
     {
-      "name": "lx-wnk-skills",
+      "name": "skills",
       "description": "Architecture design/review, component design/review, PR review-and-fix, tech-gazette, obsidian, and agent-context lifecycle skills.",
       "source": {
         "type": "git",
