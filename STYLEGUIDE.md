@@ -23,6 +23,7 @@ name: skill-name
 description: >-
   One paragraph that is "pushy" — explicit trigger phrases the user might say, what this skill does, and (optionally) what it does NOT do.
 
+
 user-invocable: true
 argument-hint: "[arg1] [arg2 (default: foo)]"
 allowed-tools: "Bash(git *) Read Edit"

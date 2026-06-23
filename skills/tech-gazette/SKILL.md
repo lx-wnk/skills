@@ -1,5 +1,6 @@
 ---
 name: tech-gazette
+license: MIT
 description: 'Generate a Tech Gazette as a self-contained HTML file covering 18+ topic areas relevant to Software Architects and Lead Developers working in Shopware/E-Commerce agencies. Supports daily and weekly editions. Use this skill whenever the user asks to create a tech gazette, generate a tech briefing, write a tech newspaper, or says things like "tech gazette", "Gazette erstellen", "daily tech news", "weekly tech news", "Tech-Briefing", "tägliche Gazette", "wöchentliche Gazette".'
 user-invocable: true
 argument-hint: '"--daily|--weekly --topics ''Topic1: search terms; Topic2: search terms'' --customers ''customer1.de: Stack. Wettbewerber: x.de | customer2.de: ...''"'

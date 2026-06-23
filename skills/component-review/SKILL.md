@@ -1,5 +1,6 @@
 ---
 name: component-review
+license: MIT
 description: 'Review low-level component and class design — SOLID, cohesion, pattern correctness, interface design, method contracts, aggregate integrity, and domain-model health inside a PR, branch, namespace, or module. Make sure to use this skill whenever the user asks to review class design, check SOLID, audit a component, check if a pattern is used correctly, or says things like "component review", "class review", "prüfe das klassen design", "are these classes clean", "review the service", "solid check". Use this skill for DETAIL REVIEW only — module boundaries and dependency structure belong in `architecture-review`.'
 user-invocable: true
 argument-hint: "[pr <N> | branch <name> | namespace <path> | leave empty for current changes]"

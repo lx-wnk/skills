@@ -34,6 +34,73 @@ npx skills add lx-wnk/skills@branch-review
 | [session-handoff](skills/session-handoff/SKILL.md) | Generate a structured `outputs/HANDOFF.md` at the end of a session — changes, decisions, next steps | `/session-handoff [focus topics or time hint]` |
 | [tech-gazette](skills/tech-gazette/SKILL.md) | Generate a daily or weekly tech news briefing as a self-contained HTML newspaper | `/tech-gazette [--daily\|--weekly] [customers]` |
 
-## Contributing
+## Standard & Portability
 
-Each skill lives in its own folder under `skills/<skill-name>/SKILL.md`. See [CLAUDE.md](CLAUDE.md) for conventions.
+These skills follow the open [agentskills.io](https://agentskills.io) standard — a skill is a folder with a `SKILL.md` (YAML frontmatter + Markdown). The same skills run in Claude Code, Codex, Cursor, Gemini, and every other skills-compatible agent. Claude-Code-only conveniences (`user-invocable`, `argument-hint`) are additive: other agents ignore them.
+
+## Registry & Versioning
+
+| Artifact | Role |
+| --- | --- |
+| `skills.json` | Authoritative, machine-readable manifest (name, description, path, license per skill + repo version). Committed. |
+| Git tags `vX.Y.Z` | The version source. Consumers pin a release, e.g. `npx skills add lx-wnk/skills@v0.1.0`. |
+| `outputs/index.md` | Agent-Context `skills/index.md` format, generated on demand. |
+| `outputs/skills-lock.json` | Agent-Dashboard lock, generated on demand. |
+
+The whole set is versioned together at the repo level (one tag), not per skill. Downstream repos (`Agent-Context` `plugins.json`, `Agent-Dashboard` `skills-lock.json`) resolve against a tag.
+
+### Sync script
+
+`scripts/sync-registry.mjs` is the single source of truth for registry consistency. It validates every `SKILL.md` against the standard, then regenerates the artifacts above.
+
+```bash
+npm run sync          # validate + write skills.json, outputs/index.md, outputs/skills-lock.json
+npm run sync:check    # validate + fail if skills.json is stale (CI gate)
+
+# write generated files straight into the sibling repos (opt-in):
+node scripts/sync-registry.mjs \
+  --index-out ../Agent-Context/templates/.agent-context/skills/index.md \
+  --lock-out  ../Agent-Dashboard/skills-lock.json
+```
+
+Validation is hard-failing: a bad `name`, a `name` that does not match its directory, a missing field, or a `description` over 1024 characters exits non-zero.
+
+## Authoring a Skill
+
+Each skill lives in its own folder: `skills/<skill-name>/SKILL.md`. See [CLAUDE.md](CLAUDE.md) and [STYLEGUIDE.md](STYLEGUIDE.md) for the full conventions; the essentials:
+
+### Frontmatter contract
+
+```yaml
+---
+name: my-skill # required: lowercase a-z0-9 + single hyphens, ≤64 chars, MUST equal the folder name
+license: MIT
+description: > # required: ≤1024 chars; what it does AND when to fire, with explicit trigger phrases (EN + DE)
+  ...
+
+user-invocable: true # Claude Code: callable as /my-skill
+argument-hint: "[arg]" # required when user-invocable (use "" if none)
+allowed-tools: "Bash(git *) Read Edit" # pre-approved tools
+---
+```
+
+### Progressive disclosure (keep the budget)
+
+1. **`name` + `description`** (~100 tokens) — loaded for every skill at startup. Make the description _pushy_: list the literal phrases a user might say. Claude under-triggers skills.
+2. **`SKILL.md` body** (< ~5000 tokens, < 500 lines) — loaded only on activation.
+3. **Reference files** (`references/`, `assets/`, `scripts/`) — loaded only when the body points to them. Split anything over ~300–500 lines out.
+
+### Write skills as a PROCESS, not prose
+
+The strongest skills are workflows with teeth, not reference essays. Use [`branch-review`](skills/branch-review/SKILL.md) as the reference implementation. It demonstrates the pattern:
+
+- **Checkpoints** — a numbered execution order, not a wall of advice.
+- **Exit criteria** — an explicit checklist; the task is not "done" until every box holds.
+- **Anti-rationalization table** — maps each tempting excuse ("while I'm here…") to the rule that overrides it, so the agent cannot rationalize its way out of discipline.
+
+### Before you commit
+
+```bash
+npm run sync          # validate + regenerate the manifest
+npm run prettier:fix  # format
+```

@@ -1,6 +1,8 @@
 ---
 name: branch-review
-description: 'Complete multi-agent code review EXCLUSIVELY of the changes between the current branch and a base branch (default main, fallback master/develop) — not an audit of the entire repo, but a deep review only of the diff-touched areas. Spawns parallel subagents for code quality, architecture, security (OWASP/CWE/CVSS), SEO, privacy/legal, UI/UX (WCAG), and performance, and consolidates their reports into a complete Findings.md with P0–P4 prioritization and reasoned recommendations. Optionally (`--apply-fixes`) applies clear fixes directly afterwards and escalates design decisions to the user. Use this skill for "review this branch", "PR review", "diff review", "branch review", "review my PR", "code review for branch", "review what changed", "review and fix", "fix PR issues", or German equivalents "review meinen branch", "review die änderungen", "schau dir den branch an", "PR-Review", whenever a PR link, a branch range, or a diff is posted for review — even without the explicit word "review" if context is clear. DO NOT trigger for an audit of the entire project without branch context — use full-project-review for that.'
+license: MIT
+description: 'Multi-agent code review EXCLUSIVELY of the diff between the current branch and a base branch (default main, fallback master/develop) — not a whole-repo audit, only diff-touched areas. Spawns parallel subagents for code quality, architecture, security (OWASP/CWE/CVSS), SEO, privacy/legal, UI/UX (WCAG), and performance, consolidated into a Findings.md with P0–P4 prioritization. Optional `--apply-fixes` applies clear fixes and escalates design decisions. Use for "review this branch", "PR review", "diff review", "branch review", "review my PR", "code review for branch", "review what changed", "review and fix", "fix PR issues", or German "review meinen branch", "review die änderungen", "schau dir den branch an", "PR-Review" — whenever a PR link, branch range, or diff is posted, even without the word "review" if context is clear. DO NOT trigger for a whole-project audit without branch context — use full-project-review.'
+user-invocable: true
 argument-hint: "[base-branch] [--apply-fixes]"
 ---
 
@@ -22,6 +24,20 @@ Forbidden:
 - Repo-wide scans without diff context ("let me check all controllers").
 - Findings about unchanged legacy code not touched by the diff.
 - Existing tech-debt lists with no connection to the current diff.
+
+### Anti-Rationalization Table
+
+These thoughts mean STOP — you are rationalizing scope drift. Each maps to the rule that overrides it.
+
+| Rationalization | Reality |
+| --- | --- |
+| "While I'm here, let me also check the rest of this file." | Only diff-touched lines + their direct context. Untouched code in the same file is out of scope. |
+| "This whole module is poorly designed, I'll note it." | No finding without a `Diff trigger: <file:line>`. Untouched tech debt belongs in `full-project-review`. |
+| "The diff is tiny, so I'll broaden to add value." | A small diff yields a small report. Padding with off-diff findings is noise, not value. |
+| "I'm fairly sure this is exploitable, I'll state it as fact." | Unverified → mark `Status: hypothesis — verification needed`. Never assert without evidence. |
+| "Most findings are minor, I'll just list the top ones." | No omission. Filtering happens only via the P0–P4 column, never by dropping findings. |
+| "HTTPS/CSP/etc. is standard, no need to mention it's fine." | Confirmed-good standards → one P4 "confirmed: …" line. Don't inflate, don't silently skip. |
+| "I couldn't access this file, I'll infer what it probably does." | Inaccessible → escalation block ("Access missing: …"). Inference is hallucination. |
 
 ## Role
 
@@ -168,6 +184,19 @@ OUTPUT: Markdown report with findings per schema + coverage note (what was check
    - Does the count in the index match the detail sections?
    - Is the coverage report complete (including what was NOT checked)?
 8. **Return the link** to the finished file.
+
+## Exit Criteria (the review is NOT complete until ALL are true)
+
+Do not report the review as done, and do not enter the auto-fix phase, until every box holds. If any fails, loop back to the named step.
+
+- [ ] A non-empty diff was the anchor; an empty diff aborted to `full-project-review` (step 1).
+- [ ] All 7 subagent roles ran and returned a report — including short "nothing found, here's why" reports (step 4).
+- [ ] Every finding carries all required schema fields (step 7).
+- [ ] Every finding has a `Diff trigger` reference; any without one was removed or proven (step 7).
+- [ ] Finding counts in the index table match the number of detail sections (step 7).
+- [ ] The coverage report lists what was NOT checked and why — no silent gaps (step 7).
+- [ ] Every finding is justified, including P3/P4; unverified ones are marked `hypothesis`.
+- [ ] `Findings.md` is written to the outputs folder and its link is returned.
 
 ## Important
 
