@@ -1,15 +1,14 @@
 # ATOM — Agent-Team Operating Model — Design
 
-> Date: 2026-06-24
-> Status: Approved (design); pending implementation plan
-> Home: `lx-wnk/skills` repo. This is Plane A (local/interactive operating model). Plane B (a native dashboard PM feature) is a separate spec.
+> Date: 2026-06-24 Status: Approved (design); pending implementation plan Home: `lx-wnk/skills` repo. This is Plane A (local/interactive operating model). Plane B (a native dashboard PM feature) is a separate spec.
 
 ## 1. Goal & Non-Goals
 
 **Goal.** Make "a coordinating PM + a team of isolated, communicating worker agents, parallel work in git worktrees" the **default operating model** for non-trivial work in interactive Claude Code sessions. Provide a discoverable global skill (`atom-operating-model`) that encodes how the main thread (PM) decides worktree topology, fans out workers, governs inter-agent communication, and integrates results.
 
 **Non-Goals.**
-- Not the dashboard product feature (a native PM-agent + agent-to-agent channel) — that is Plane B, separate spec. ATOM only governs interactive sessions; the dashboard reuses ATOM's *synchronous subset* (see §7).
+
+- Not the dashboard product feature (a native PM-agent + agent-to-agent channel) — that is Plane B, separate spec. ATOM only governs interactive sessions; the dashboard reuses ATOM's _synchronous subset_ (see §7).
 - Not a replacement for OFD. OFD remains the single-stream execution procedure; ATOM is the layer above that distributes streams.
 - Not a new execution engine — ATOM orchestrates existing primitives (`Agent`, `SendMessage`, git worktrees, superpowers skills).
 
@@ -27,7 +26,7 @@ Trivial work (≤1 tool call) stays with the PM directly.
 ## 3. Topology Decision (PM chooses BEFORE dispatch)
 
 | Situation | Topology |
-|---|---|
+| --- | --- |
 | Multiple **independent** features/tasks (no file overlap, no dependency) | one worktree+branch each, parallel → **one PR each** |
 | **One** feature split into **file-disjoint** subtasks | one worktree each, parallel → PM merges branches → **one PR** |
 | One feature, shared files / tight coupling | **sequential, single worktree** (this is OFD) |
@@ -53,13 +52,13 @@ A single worker stream is itself an OFD run (implementer → reviewer → verifi
 
 ## 6. Guardrails & Failure Handling
 
-| Risk | Guard |
-|---|---|
-| Worker dies/stalls | PM detects via notification + verifies via `git`/CI; respawns or reassigns |
-| Merge conflict | PM owns merge; non-disjoint streams fall back to sequential |
-| Worker report lies / truncates | PM verifies via `git log` + CI, never via prose (generalized OFD rule) |
-| PM context fills up | PM stays lean: delegates, does not do work; worker context is isolated |
-| Endless comms | comms budget + PM freeze |
+| Risk                           | Guard                                                                      |
+| ------------------------------ | -------------------------------------------------------------------------- |
+| Worker dies/stalls             | PM detects via notification + verifies via `git`/CI; respawns or reassigns |
+| Merge conflict                 | PM owns merge; non-disjoint streams fall back to sequential                |
+| Worker report lies / truncates | PM verifies via `git log` + CI, never via prose (generalized OFD rule)     |
+| PM context fills up            | PM stays lean: delegates, does not do work; worker context is isolated     |
+| Endless comms                  | comms budget + PM freeze                                                   |
 
 ## 7. Execution Context (critical)
 
@@ -73,7 +72,7 @@ Consequence for the dashboard (Plane B): the reliable loop there is the **pipeli
 ## 8. Relationship to Existing Pieces
 
 - **Global `CLAUDE.md`** ("delegate when >1 tool call", lean coordinator) = the **trigger**. ATOM = the **structure**.
-- **OFD** = single-stream execution (one worker = one OFD run). ATOM references the OFD *pattern* generically and does not hard-depend on it; ATOM works in repos without OFD.
+- **OFD** = single-stream execution (one worker = one OFD run). ATOM references the OFD _pattern_ generically and does not hard-depend on it; ATOM works in repos without OFD.
 - **superpowers** `dispatching-parallel-agents`, `subagent-driven-development`, `using-git-worktrees` = the building blocks ATOM orchestrates.
 
 ## 9. Deliverable (in `lx-wnk/skills`)
@@ -95,7 +94,7 @@ A parallel 2-stream throwaway (like the OFD smoke test): two **independent** doc
 ## 11. Risks & Mitigations
 
 | Risk | Mitigation |
-|---|---|
+| --- | --- |
 | Someone runs the background mesh headless → stall | §7 Execution-Context clause makes the boundary explicit; headless uses synchronous subset only |
 | Parallel chaos / races | contracts-first + file-disjoint rule + PM-owned merge |
 | Skill not discovered by dashboard agents | install ATOM in the config dir the spawner uses (`~/.claude-personal` marketplace) |

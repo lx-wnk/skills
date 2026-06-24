@@ -3,6 +3,7 @@ name: atom-operating-model
 description: >-
   Default operating model for non-trivial work: act as a coordinating PM that fans out a team of isolated, communicating worker agents, with parallel work in separate git worktrees. Trigger on "arbeite im Team", "parallel bearbeiten", "koordiniere Agenten", "mehrere Tasks gleichzeitig", "spawn a team", "fan out", "work on these in parallel", "PM mode", "split this across agents". Defines worktree topology rules, the main-thread-PM mesh, peer-to-peer comms governance, and an execution-context boundary (full background mesh only in interactive sessions; headless/spawned agents use the synchronous subset only). NOT for trivial single-step tasks — those stay with the coordinator. For single-feature delivery detail use the project's OFD harness; this is the layer above that distributes streams.
 
+
 user-invocable: true
 argument-hint: "[task or set of tasks to coordinate]"
 allowed-tools: "Agent Bash(git *) Read Edit Write"
