@@ -110,3 +110,8 @@ Then integrate per the topology rule:
 4. Each worker stream is an OFD run (implementer → reviewer → verifier in its worktree).
 5. Integration follows the topology rule (independent → PR each; disjoint-split → PM merges branches → one PR; shared files → sequential).
 6. Failure handling: PM verifies worker outcomes via `git log`/CI, respawns dead workers, owns merges; non-disjoint streams fall back to sequential.
+
+## Validation
+
+- 2026-06-24 — full mesh verified live: PM (main thread) dispatched two independent worker streams concurrently as background `Agent` calls, each in its own git worktree off `main`. Each committed only its own marker — zero cross-contamination (independent-features topology rule holds). One worker sent a direct peer `SendMessage` to the other, which was received and reported (`PEER_RECEIVED`).
+- Timing lesson: a worker that has come to rest is NOT final — an incoming peer `SendMessage` resumes it. Conversely, a peer you reply to may already be gone. The PM must treat "completed" as "completed-for-now": a stream can re-notify when peer traffic arrives. Order peer exchanges so the receiver is still live, or accept that late replies are dropped.
