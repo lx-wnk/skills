@@ -22,3 +22,7 @@ Peer comms are bounded by four interlocking rules:
 2. **PM freeze** — the PM can freeze comms between specific peers (or all peers) at any time; frozen workers may not exchange messages until the PM lifts the freeze.
 3. **Progress before talk** — a worker may not communicate without delivering; every message must be accompanied by, or follow, concrete progress on the assigned task. Talking without delivering is a budget violation.
 4. **Escalate on stall** — if a peer exchange has not unblocked a worker after N round-trips, the worker stops the exchange and reports the blocker to the PM.
+
+## Liveness & Message Ordering
+
+A worker that has come to rest is NOT final — an incoming peer `SendMessage` resumes it; conversely, a peer you reply to may already be gone. The PM treats "completed" as "completed-for-now": a stream can re-notify when peer traffic arrives. Order peer exchanges so the receiver is still live, or accept that late replies are dropped.

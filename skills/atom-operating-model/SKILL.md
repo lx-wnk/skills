@@ -80,7 +80,7 @@ flowchart TD
 | One feature, shared files / tight coupling | **Sequential, single worktree** (this is OFD) |
 | Trivial (≤1 tool call) | PM solo — no worktrees, no fan-out |
 
-Worktrees are always created manually off `main` — never via the `Agent` `isolation:'worktree'` flag (that forks from `origin/main` and is not suited to multi-stream coordination).
+Worktrees are always created manually off `main` — never via the `Agent` `isolation:'worktree'` flag, so the PM controls the base ref and dependency state of each stream.
 
 ## Execution context
 

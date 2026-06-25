@@ -39,7 +39,7 @@ Before creating worktrees for a file-disjoint split:
 
 ## 3. Worktree Setup
 
-**Invariant:** Worktrees are created manually off `main`, never via the `Agent` `isolation:'worktree'` flag. The `isolation:'worktree'` flag forks from `origin/main` and is not under the PM's control; manual creation ensures the correct base ref and dependency state.
+**Invariant:** Worktrees are created manually off `main`, never via the `Agent` `isolation:'worktree'` flag. Manual creation keeps the base ref and dependency state of each stream under the PM's control.
 
 For each parallel stream:
 
@@ -110,8 +110,3 @@ Then integrate per the topology rule:
 4. Each worker stream is an OFD run (implementer → reviewer → verifier in its worktree).
 5. Integration follows the topology rule (independent → PR each; disjoint-split → PM merges branches → one PR; shared files → sequential).
 6. Failure handling: PM verifies worker outcomes via `git log`/CI, respawns dead workers, owns merges; non-disjoint streams fall back to sequential.
-
-## Validation
-
-- 2026-06-24 — full mesh verified live: PM (main thread) dispatched two independent worker streams concurrently as background `Agent` calls, each in its own git worktree off `main`. Each committed only its own marker — zero cross-contamination (independent-features topology rule holds). One worker sent a direct peer `SendMessage` to the other, which was received and reported (`PEER_RECEIVED`).
-- Timing lesson: a worker that has come to rest is NOT final — an incoming peer `SendMessage` resumes it. Conversely, a peer you reply to may already be gone. The PM must treat "completed" as "completed-for-now": a stream can re-notify when peer traffic arrives. Order peer exchanges so the receiver is still live, or accept that late replies are dropped.

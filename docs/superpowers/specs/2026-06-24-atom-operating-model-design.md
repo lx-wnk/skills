@@ -32,7 +32,7 @@ Trivial work (≤1 tool call) stays with the PM directly.
 | One feature, shared files / tight coupling | **sequential, single worktree** (this is OFD) |
 | Trivial (≤1 tool call) | PM solo |
 
-Worktrees are always created manually off `main` — never via the `Agent` `isolation:'worktree'` flag (it forks from origin/main; see the worktree-baseref lesson).
+Worktrees are always created manually off `main` — never via the `Agent` `isolation:'worktree'` flag (manual creation keeps the base ref and dependency state under the PM's control; see the worktree-baseref lesson).
 
 ## 4. Mesh Mechanics
 
@@ -90,6 +90,8 @@ No duplicate skill file in agent-dashboard — the global skill is auto-discover
 ## 10. Validation
 
 A parallel 2-stream throwaway (like the OFD smoke test): two **independent** doc tasks, each in its own worktree, dispatched concurrently by the PM (main thread), with one forced peer `SendMessage` between the two workers, ending in two separate throwaway PRs. Proves: background fan-out + completion notifications + the independent-features topology rule + peer comms + PM integration. Torn down after.
+
+**Live result (2026-06-24):** full mesh verified — the PM (main thread) dispatched two independent worker streams concurrently as background `Agent` calls, each in its own git worktree off `main`. Each committed only its own marker (zero cross-contamination; the independent-features topology rule holds), and one worker's direct peer `SendMessage` was received and reported (`PEER_RECEIVED`).
 
 ## 11. Risks & Mitigations
 
