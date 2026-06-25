@@ -1,5 +1,7 @@
 # skills
 
+[![Release](https://img.shields.io/github/v/release/lx-wnk/skills?sort=semver)](https://github.com/lx-wnk/skills/releases) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Standard: agentskills.io](https://img.shields.io/badge/standard-agentskills.io-7c3aed.svg)](https://agentskills.io) [![Install: skills.sh](https://img.shields.io/badge/install-skills.sh-000.svg)](https://skills.sh)
+
 Curated skills for AI coding agents, distributed via [skills.sh](https://skills.sh).
 
 Skills are **agent-agnostic** — they work with Claude Code, Cursor, Copilot, Windsurf, Gemini, and other AI agents.
