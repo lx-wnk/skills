@@ -78,6 +78,7 @@ license: MIT
 description: > # required: ≤1024 chars; what it does AND when to fire, with explicit trigger phrases (EN + DE)
   ...
 
+
 user-invocable: true # Claude Code: callable as /my-skill
 argument-hint: "[arg]" # required when user-invocable (use "" if none)
 allowed-tools: "Bash(git *) Read Edit" # pre-approved tools
