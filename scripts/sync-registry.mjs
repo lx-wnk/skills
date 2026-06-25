@@ -42,16 +42,18 @@ const MANIFEST_OUT = join(ROOT, "skills.json");
 
 function version() {
   const raw = process.env.SKILLS_VERSION ?? gitDescribe();
-  // Only a clean semver-ish tag is trusted. Anything else (incl. a hostile git
-  // tag) falls back, so the value written into skills-lock.json's ref/install is
-  // always safe for a downstream consumer to use as a git ref.
+  // Accept a clean release tag (vX.Y.Z) or a distance-honest describe
+  // (vX.Y.Z-N-gSHA). Anything else — incl. a hostile git tag — falls back, so the
+  // value written into skills-lock.json's ref/install is always a safe git ref.
   return /^v?\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(raw) ? raw : "0.0.0-dev";
 }
 
 function gitDescribe() {
   try {
-    // execFileSync (no shell) — fixed args, no injection surface
-    return execFileSync("git", ["describe", "--tags", "--abbrev=0"], {
+    // No --abbrev=0: keep the -N-gSHA distance suffix so a post-tag commit is
+    // honestly "ahead of the tag" rather than silently claiming the bare tag.
+    // execFileSync (no shell) — fixed args, no injection surface.
+    return execFileSync("git", ["describe", "--tags"], {
       cwd: ROOT,
       stdio: ["ignore", "pipe", "ignore"],
     })
@@ -199,6 +201,47 @@ function writeFileEnsured(path, content) {
   writeFileSync(path, content);
 }
 
+const CLEAN_RELEASE = /^v?\d+\.\d+\.\d+$/;
+const rel = (path) => path.replace(ROOT + "/", "");
+
+// Drift gate for `--check`. skills.json is the committed authority: its content is
+// compared version-agnostically (HEAD may sit ahead of the last tag) while the
+// committed version itself must be a clean release tag — dev/distance versions
+// must never be committed. index.md / skills-lock.json are gated only when their
+// path was passed explicitly (a committed sibling-repo target), not the gitignored
+// outputs/ defaults.
+function checkDrift(manifest, indexMd, lock) {
+  const drift = [];
+
+  if (!existsSync(MANIFEST_OUT)) {
+    drift.push("skills.json missing — run `npm run sync`");
+  } else {
+    const committed = JSON.parse(readFileSync(MANIFEST_OUT, "utf8"));
+    const fresh = JSON.parse(manifest);
+    const withoutVersion = ({ version, ...rest }) => rest;
+    if (JSON.stringify(withoutVersion(committed)) !== JSON.stringify(withoutVersion(fresh))) {
+      drift.push("skills.json content is stale — run `npm run sync`");
+    }
+    if (!CLEAN_RELEASE.test(committed.version)) {
+      drift.push(
+        `skills.json version "${committed.version}" is not a clean release tag — re-sync at release with SKILLS_VERSION=vX.Y.Z`,
+      );
+    }
+  }
+
+  const explicitTargets = [
+    [args.includes("--index-out"), INDEX_OUT, indexMd],
+    [args.includes("--lock-out"), LOCK_OUT, lock],
+  ];
+  for (const [explicit, path, content] of explicitTargets) {
+    if (explicit && existsSync(path) && readFileSync(path, "utf8") !== content) {
+      drift.push(`${rel(path)} is stale — run \`npm run sync\``);
+    }
+  }
+
+  return drift;
+}
+
 function main() {
   const { skills, errors } = loadSkills();
 
@@ -213,12 +256,12 @@ function main() {
   const lock = JSON.stringify(buildLock(skills, ver), null, 2) + "\n";
 
   if (CHECK) {
-    const current = existsSync(MANIFEST_OUT) ? readFileSync(MANIFEST_OUT, "utf8") : "";
-    if (current !== manifest) {
-      console.error("✗ skills.json is out of date — run `npm run sync` and commit the result.");
+    const drift = checkDrift(manifest, indexMd, lock);
+    if (drift.length) {
+      console.error("✗ registry out of date:\n" + drift.map((d) => `  - ${d}`).join("\n"));
       process.exit(1);
     }
-    console.log(`✓ ${skills.length} skills valid, skills.json in sync (version ${ver}).`);
+    console.log(`✓ ${skills.length} skills valid, registry in sync.`);
     return;
   }
 

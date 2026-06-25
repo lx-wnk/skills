@@ -67,6 +67,8 @@ node scripts/sync-registry.mjs \
 
 Validation is hard-failing: a bad `name`, a `name` that does not match its directory, a missing field, or a `description` over 1024 characters exits non-zero.
 
+**Version provenance.** `version()` resolves from `SKILLS_VERSION`, else `git describe --tags` (distance-honest: `v0.1.0-3-gSHA` on a post-tag commit), else `0.0.0-dev`. The committed `skills.json` must always carry a **clean release tag** (`vX.Y.Z`) — regenerate it at release time with `SKILLS_VERSION=vX.Y.Z npm run sync`, not on every commit. `sync:check` enforces this: it compares `skills.json` content version-agnostically (HEAD may be ahead of the tag) but fails if the committed version is not a clean release tag, or if an explicitly passed `--index-out` / `--lock-out` target is stale.
+
 ## Authoring a Skill
 
 Each skill lives in its own folder: `skills/<skill-name>/SKILL.md`. See [CLAUDE.md](CLAUDE.md) and [STYLEGUIDE.md](STYLEGUIDE.md) for the full conventions; the essentials:
