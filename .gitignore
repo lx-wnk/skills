@@ -1,4 +1,5 @@
 node_modules/
+outputs/
 HANDOFF-PROMPT.md
 obsidian-workspace/
 .claude/scheduled_tasks.lock

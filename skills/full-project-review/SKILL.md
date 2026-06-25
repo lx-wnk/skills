@@ -1,6 +1,9 @@
 ---
 name: full-project-review
+license: MIT
 description: 'Comprehensive multi-agent audit of the ENTIRE project (all repos / full HEAD state). Spawns parallel subagents for code quality, architecture, security (OWASP/CWE/CVSS), SEO, privacy/legal, UI/UX (WCAG), and performance, and consolidates their reports into a complete Findings.md with P0–P4 prioritization and reasoned recommendations. Use this skill for "review the entire project", "full project audit", "audit the codebase", "comprehensive review", "code audit", "security audit", "compliance audit", "review everything", "DSGVO audit", "OWASP audit", or German equivalents "vollumfängliches review", "review das ganze projekt", "audit das projekt", "kompletter code-audit", whenever a systematic audit without branch/diff context is requested — even when no changes are pending, no PR exists, or the branch is empty. PR/diff status is NOT a blocker. DO NOT trigger when only branch changes should be reviewed — use branch-review for that.'
+user-invocable: true
+argument-hint: ""
 ---
 
 # Full Project Review (Multi-Agent)

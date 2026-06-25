@@ -1,5 +1,6 @@
 ---
 name: architecture-design
+license: MIT
 description: 'Design system-level architecture — bounded contexts, modules, domains, layering, dependency direction, and ADRs. Make sure to use this skill whenever the user asks to design an architecture, plan a system, define bounded contexts, draft an ADR, decide on module boundaries, or says things like "entwirf die Architektur", "plane das System", "wie strukturieren wir X", "architecture design", "system design", "bounded contexts", "module layout". Use this skill for HIGH-LEVEL structural decisions only — component and class-level design belongs in `component-design`.'
 user-invocable: true
 argument-hint: "[short topic, e.g. 'order fulfillment module']"

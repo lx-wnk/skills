@@ -1,5 +1,6 @@
 ---
 name: component-design
+license: MIT
 description: 'Design low-level component and class structure — classes, interfaces, design patterns, method signatures, aggregates, service contracts, and collaboration within a single module or bounded context. Make sure to use this skill whenever the user asks to design classes, pick a design pattern, define interfaces, model an aggregate, shape a service, or says things like "wie strukturiere ich die klassen", "welches pattern passt", "component design", "class design", "design the service", "model the aggregate". Use this skill for DETAIL DESIGN inside a known module — system-level structure belongs in `architecture-design`.'
 user-invocable: true
 argument-hint: "[component or module name, e.g. 'OrderService']"

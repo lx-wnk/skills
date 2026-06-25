@@ -1,7 +1,9 @@
 ---
 name: session-handoff
+license: MIT
 description: >-
   Generate a structured handoff document at the end of a work session — what was implemented, which decisions were made and why, open questions, and recommended next steps. The document is written to `outputs/HANDOFF.md` (repo convention, cf. `branch-review`). Use this skill whenever the user wants to end a session, create a handoff, or says: "session-handoff", "wrap up", "end of session", "session summary", "hand over to next session", "Handoff erstellen", "Session abschließen", "was haben wir heute gemacht", "Zusammenfassung der Session", "nächste Schritte dokumentieren", "übergib an nächste Session".
+
 
 user-invocable: true
 argument-hint: "[focus topics or time hint, e.g. 'Focus: Auth refactoring' or 'since Monday']"
