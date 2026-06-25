@@ -9,7 +9,7 @@
 //
 // Usage:
 //   node scripts/sync-registry.mjs            write all artifacts
-//   node scripts/sync-registry.mjs --check    validate + fail on drift (CI), no writes
+//   node scripts/sync-registry.mjs --check    validate + fail if skills.json is stale (CI), no writes
 //   node scripts/sync-registry.mjs --index-out <path> --lock-out <path>
 //                                             override output paths (e.g. sibling repos)
 
@@ -26,19 +26,29 @@ const SKILLS_DIR = join(ROOT, "skills");
 const NAME_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/; // lowercase, hyphens, no leading/trailing/double hyphen
 const NAME_MAX = 64;
 const DESC_MAX = 1024;
+const INDEX_DESC_MAX = 160; // max chars for a description cell in the generated index.md
 
 const args = process.argv.slice(2);
 const CHECK = args.includes("--check");
 const flag = (name, fallback) => {
   const i = args.indexOf(name);
-  return i !== -1 && args[i + 1] ? args[i + 1] : fallback;
+  const val = i !== -1 ? args[i + 1] : undefined;
+  // reject a missing value or the next flag being mistaken for this flag's value
+  return val && !val.startsWith("--") ? val : fallback;
 };
 const INDEX_OUT = resolve(ROOT, flag("--index-out", "outputs/index.md"));
 const LOCK_OUT = resolve(ROOT, flag("--lock-out", "outputs/skills-lock.json"));
 const MANIFEST_OUT = join(ROOT, "skills.json");
 
 function version() {
-  if (process.env.SKILLS_VERSION) return process.env.SKILLS_VERSION;
+  const raw = process.env.SKILLS_VERSION ?? gitDescribe();
+  // Only a clean semver-ish tag is trusted. Anything else (incl. a hostile git
+  // tag) falls back, so the value written into skills-lock.json's ref/install is
+  // always safe for a downstream consumer to use as a git ref.
+  return /^v?\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/.test(raw) ? raw : "0.0.0-dev";
+}
+
+function gitDescribe() {
   try {
     // execFileSync (no shell) — fixed args, no injection surface
     return execFileSync("git", ["describe", "--tags", "--abbrev=0"], {
@@ -88,7 +98,7 @@ function stripQuotes(s) {
 
 function firstSentence(desc) {
   const cut = desc.split(/(?<=[.!?])\s/)[0];
-  return cut.length > 160 ? cut.slice(0, 157).trimEnd() + "…" : cut;
+  return cut.length > INDEX_DESC_MAX ? cut.slice(0, INDEX_DESC_MAX - 1).trimEnd() + "…" : cut;
 }
 
 function loadSkills() {
@@ -133,7 +143,7 @@ function loadSkills() {
       description: fm.description || "",
       path: `skills/${dir}`,
       license: fm.license || "MIT",
-      userInvocable: fm["user-invocable"] === "true" || fm["user-invocable"] === true,
+      userInvocable: fm["user-invocable"] === "true", // parser emits strings only
     });
   }
 
