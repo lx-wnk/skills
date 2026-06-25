@@ -29,6 +29,12 @@
       "license": "MIT"
     },
     {
+      "name": "atom-operating-model",
+      "description": "Default operating model for non-trivial work: act as a coordinating PM that fans out a team of isolated, communicating worker agents, with parallel work in separate git worktrees. Trigger on \"arbeite im Team\", \"parallel bearbeiten\", \"koordiniere Agenten\", \"mehrere Tasks gleichzeitig\", \"spawn a team\", \"fan out\", \"work on these in parallel\", \"PM mode\", \"split this across agents\". Defines worktree topology rules, the main-thread-PM mesh, peer-to-peer comms governance, and an execution-context boundary (full background mesh only in interactive sessions; headless/spawned agents use the synchronous subset only). NOT for trivial single-step tasks — those stay with the coordinator. For single-feature delivery detail use the project's OFD harness; this is the layer above that distributes streams.",
+      "path": "skills/atom-operating-model",
+      "license": "MIT"
+    },
+    {
       "name": "branch-review",
       "description": "Multi-agent code review EXCLUSIVELY of the diff between the current branch and a base branch (default main, fallback master/develop) — not a whole-repo audit, only diff-touched areas. Spawns parallel subagents for code quality, architecture, security (OWASP/CWE/CVSS), SEO, privacy/legal, UI/UX (WCAG), and performance, consolidated into a Findings.md with P0–P4 prioritization. Optional `--apply-fixes` applies clear fixes and escalates design decisions. Use for \"review this branch\", \"PR review\", \"diff review\", \"branch review\", \"review my PR\", \"code review for branch\", \"review what changed\", \"review and fix\", \"fix PR issues\", or German \"review meinen branch\", \"review die änderungen\", \"schau dir den branch an\", \"PR-Review\" — whenever a PR link, branch range, or diff is posted, even without the word \"review\" if context is clear. DO NOT trigger for a whole-project audit without branch context — use full-project-review.",
       "path": "skills/branch-review",
