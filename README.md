@@ -49,6 +49,8 @@ These skills follow the open [agentskills.io](https://agentskills.io) standard â
 
 The whole set is versioned together at the repo level (one tag), not per skill. Downstream repos (`Agent-Context` `plugins.json`, `Agent-Dashboard` `skills-lock.json`) resolve against a tag.
 
+> `outputs/` does not exist in a fresh clone (it is gitignored) â€” run `npm run sync` first, or consume the copies written into the sibling repos via `--index-out` / `--lock-out`. Only `skills.json` is committed.
+
 ### Sync script
 
 `scripts/sync-registry.mjs` is the single source of truth for registry consistency. It validates every `SKILL.md` against the standard, then regenerates the artifacts above.
