@@ -4,7 +4,7 @@
   "plugins": [
     {
       "name": "skills",
-      "description": "Architecture design/review, component design/review, PR review-and-fix, tech-gazette, obsidian, and agent-context lifecycle skills.",
+      "description": "Architecture & component design/review, branch & full-project code review, agent-team operating model, session handoff, tech-gazette, obsidian, and agent-context lifecycle skills.",
       "source": {
         "type": "git",
         "url": "https://github.com/lx-wnk/skills"
