@@ -1,6 +1,6 @@
 name: Skill proposal
 description: Propose a new skill for this collection
-title: "[skill] <short name>"
+title: "[skill] "
 labels: [skill-proposal]
 body:
   - type: input
