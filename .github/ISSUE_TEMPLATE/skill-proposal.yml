@@ -1,0 +1,34 @@
+name: Skill proposal
+description: Propose a new skill for this collection
+title: "[skill] <short name>"
+labels: [skill-proposal]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Proposed skill name
+      description: lowercase a-z0-9 + single hyphens, will equal the folder name
+      placeholder: my-skill
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does it solve?
+      description: When would an agent fire this skill, and what does it do?
+    validations:
+      required: true
+  - type: textarea
+    id: triggers
+    attributes:
+      label: Trigger phrases (EN + DE)
+      description: The literal phrases a user might say to invoke it.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Fit
+      options:
+        - label: Not already covered by an existing skill
+        - label: Agent-agnostic (no hard dependency on one specific agent)

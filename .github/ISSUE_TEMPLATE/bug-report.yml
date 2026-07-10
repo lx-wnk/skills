@@ -1,0 +1,31 @@
+name: Bug report
+description: A skill misfires, under-triggers, or produces the wrong result
+title: "[bug] <skill>: <short summary>"
+labels: [bug]
+body:
+  - type: input
+    id: skill
+    attributes:
+      label: Which skill?
+      placeholder: branch-review
+    validations:
+      required: true
+  - type: dropdown
+    id: agent
+    attributes:
+      label: Agent / host
+      options:
+        - Claude Code
+        - Cursor
+        - Codex
+        - Gemini
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+      description: What you asked, what should have happened, what happened.
+    validations:
+      required: true

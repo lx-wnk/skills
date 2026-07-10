@@ -1,5 +1,5 @@
 {
-  "name": "ac-skills",
+  "name": "skills",
   "private": true,
   "scripts": {
     "prettier": "prettier --check .",
