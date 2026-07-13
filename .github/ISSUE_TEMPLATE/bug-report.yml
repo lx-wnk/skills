@@ -1,0 +1,41 @@
+name: Bug report
+description: A skill misfires, under-triggers, or produces the wrong result
+title: "[bug] "
+labels: [bug]
+body:
+  - type: input
+    id: skill
+    attributes:
+      label: Which skill?
+      description: "e.g. branch-review — the skill that misbehaved"
+      placeholder: branch-review
+    validations:
+      required: true
+  - type: dropdown
+    id: agent
+    attributes:
+      label: Agent / host
+      options:
+        - Claude Code
+        - Cursor
+        - Copilot
+        - Windsurf
+        - Gemini
+        - Codex
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: agent_other
+    attributes:
+      label: If Other, which agent/host?
+      placeholder: Aider, Zed, ...
+    validations:
+      required: false
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+      description: What you asked, what should have happened, what happened.
+    validations:
+      required: true

@@ -1,6 +1,6 @@
 {
   "name": "skills",
-  "description": "Curated skills for AI coding agents — architecture design/review, component design/review, PR review-and-fix, tech-gazette, obsidian, and agent-context lifecycle.",
+  "description": "Curated, agent-agnostic skills for AI coding agents — architecture and component design/review, code review, agent-workflow and context-lifecycle automation, plus knowledge-base and reporting skills.",
   "author": {
     "name": "Alexander Wink"
   },

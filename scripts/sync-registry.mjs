@@ -2,7 +2,8 @@
 // Registry sync + conformance validator for the skills repo.
 //
 // Reads every skills/<name>/SKILL.md, validates its frontmatter against the
-// agentskills.io standard, and regenerates the machine-readable registry:
+// agentskills.io standard, asserts the hand-maintained README skill table lists
+// exactly the real skill set, and regenerates the machine-readable registry:
 //   - skills.json            (repo root, committed — authoritative manifest)
 //   - outputs/index.md       (Agent-Context skills/index.md format)
 //   - outputs/skills-lock.json (Agent-Dashboard lock, skills.sh add model)
@@ -39,6 +40,7 @@ const flag = (name, fallback) => {
 const INDEX_OUT = resolve(ROOT, flag("--index-out", "outputs/index.md"));
 const LOCK_OUT = resolve(ROOT, flag("--lock-out", "outputs/skills-lock.json"));
 const MANIFEST_OUT = join(ROOT, "skills.json");
+const README_OUT = join(ROOT, "README.md");
 
 function version() {
   const raw = process.env.SKILLS_VERSION ?? gitDescribe();
@@ -152,6 +154,30 @@ function loadSkills() {
   return { skills, errors };
 }
 
+// The README "Available Skills" table is hand-maintained (not generated). Assert it
+// lists exactly the real skill set — every skill has one row, no row points at a
+// missing skill, no duplicates. Table rows start with `| [name](skills/name/SKILL.md)`;
+// anchoring to line-start `|` ignores inline prose links to a SKILL.md.
+function checkReadmeTable(skills) {
+  const problems = [];
+  if (!existsSync(README_OUT)) return ["README.md missing"];
+
+  const rowRe = /^\|\s*\[[^\]]+\]\(skills\/([a-z0-9-]+)\/SKILL\.md\)/gm;
+  const listed = [...readFileSync(README_OUT, "utf8").matchAll(rowRe)].map((m) => m[1]);
+  const names = new Set(skills.map((s) => s.name));
+  const seen = new Set();
+
+  for (const n of listed) {
+    if (!names.has(n)) problems.push(`README skill table lists '${n}', which has no skills/${n}/ directory`);
+    else if (seen.has(n)) problems.push(`README skill table lists '${n}' more than once`);
+    seen.add(n);
+  }
+  for (const s of skills) {
+    if (!seen.has(s.name)) problems.push(`skills/${s.name}/ is missing from the README skill table`);
+  }
+  return problems;
+}
+
 function buildManifest(skills, ver) {
   return {
     name: REPO,
@@ -244,9 +270,10 @@ function checkDrift(manifest, indexMd, lock) {
 
 function main() {
   const { skills, errors } = loadSkills();
+  const allErrors = errors.concat(checkReadmeTable(skills));
 
-  if (errors.length) {
-    console.error("✗ Conformance errors:\n" + errors.map((e) => `  - ${e}`).join("\n"));
+  if (allErrors.length) {
+    console.error("✗ Conformance errors:\n" + allErrors.map((e) => `  - ${e}`).join("\n"));
     process.exit(1);
   }
 
