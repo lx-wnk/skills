@@ -46,6 +46,8 @@ Validation is hard-failing: a bad `name`, a `name` that does not match its direc
 
 ## Before you open a PR
 
+Requires Node ≥ 20 (matches CI).
+
 ```bash
 npm run sync          # validate frontmatter + regenerate skills.json
 npm run prettier:fix  # format

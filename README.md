@@ -1,8 +1,10 @@
 # skills
 
-[![Release](https://img.shields.io/github/v/release/lx-wnk/skills?sort=semver)](https://github.com/lx-wnk/skills/releases) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Standard: agentskills.io](https://img.shields.io/badge/standard-agentskills.io-7c3aed.svg)](https://agentskills.io) [![Install: skills.sh](https://img.shields.io/badge/install-skills.sh-000.svg)](https://skills.sh)
+[![CI](https://github.com/lx-wnk/skills/actions/workflows/ci.yml/badge.svg)](https://github.com/lx-wnk/skills/actions/workflows/ci.yml) [![Release](https://img.shields.io/github/v/release/lx-wnk/skills?sort=semver)](https://github.com/lx-wnk/skills/releases) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Standard: agentskills.io](https://img.shields.io/badge/standard-agentskills.io-7c3aed.svg)](https://agentskills.io) [![Install: skills.sh](https://img.shields.io/badge/install-skills.sh-000.svg)](https://skills.sh)
 
-Curated, agent-agnostic skills for AI coding agents — reusable workflows your agent loads on demand. They run in Claude Code, Cursor, Copilot, Windsurf, Gemini, and any other [agentskills.io](https://agentskills.io)-compatible agent.
+Curated, agent-agnostic skills for AI coding agents — reusable workflows your agent loads on demand.
+
+**Works with** Claude Code · Cursor · Copilot · Windsurf · Gemini · any [agentskills.io](https://agentskills.io)-compatible agent.
 
 ## Why skills?
 
@@ -12,17 +14,6 @@ A capable coding agent still forgets _how you want work done_. Every session you
 - **No prompt babysitting** — a _pushy_ `description` with explicit trigger phrases means the agent invokes the skill on its own. You say "review my branch", the workflow fires.
 - **Portable** — one open standard, many agents. Write once, run wherever your team works.
 - **Cheap to load** — only a skill's name + description sit in context by default (~100 tokens each). The full instructions load _only_ when the skill activates, so a large library costs almost nothing until used.
-- **Teeth, not vibes** — the strong skills here are processes with checkpoints and exit criteria (e.g. [`branch-review`](skills/branch-review/SKILL.md)), so the agent can't quietly skip the hard parts.
-
-## How it works
-
-A skill is just a folder with a `SKILL.md` — YAML frontmatter plus Markdown instructions. It loads in three stages (**progressive disclosure**), so the library scales without flooding the context window:
-
-1. **`name` + `description`** — always in context. The `description` is the trigger: it lists the literal phrases that should fire the skill.
-2. **`SKILL.md` body** — loaded only when the skill activates.
-3. **`references/`, `assets/`, `scripts/`** — loaded only when the body points to them.
-
-Claude-Code-only conveniences (`user-invocable`, `argument-hint`) are additive — other agents simply ignore them, so the same skill stays portable.
 
 ## Install
 
@@ -37,22 +28,59 @@ npx skills add lx-wnk/skills@branch-review
 npx skills add lx-wnk/skills@v0.1.0
 ```
 
+## Quick example
+
+Once installed, just talk to your agent in plain language:
+
+> **You:** review my branch
+
+`branch-review` fires on its own — no slash command, no setup. It spawns parallel agents for code quality, security, SEO, UX, and performance, then consolidates everything into a prioritized `outputs/Findings.md`. The skill matched your intent from its trigger phrases.
+
+Prefer to be explicit? Every skill is also a slash command: `/branch-review`.
+
 ## Available Skills
+
+**Design & Architecture**
+
+| Skill | Description | Invoke |
+| --- | --- | --- |
+| [architecture-design](skills/architecture-design/SKILL.md) | Design system-level architecture — bounded contexts, modules, domains, ADRs | `/architecture-design [topic]` |
+| [architecture-review](skills/architecture-review/SKILL.md) | Review architecture of PR, branch, namespace, or whole project for structural issues | `/architecture-review [pr N \| branch X \| namespace path]` |
+| [component-design](skills/component-design/SKILL.md) | Design low-level component and class structure — patterns, interfaces, aggregates | `/component-design [component name]` |
+| [component-review](skills/component-review/SKILL.md) | Review class design, SOLID, cohesion, and pattern correctness | `/component-review [pr N \| branch X \| namespace path]` |
+
+**Review & Audit**
+
+| Skill | Description | Invoke |
+| --- | --- | --- |
+| [branch-review](skills/branch-review/SKILL.md) | Multi-agent review of branch diff — code/security/SEO/legal/UX/perf; optional `--apply-fixes` mode | `/branch-review [base-branch] [--apply-fixes]` |
+| [full-project-review](skills/full-project-review/SKILL.md) | Multi-agent audit of the whole project (HEAD state, all repos) | `/full-project-review` |
+
+**Agent Context & Coordination**
 
 | Skill | Description | Invoke |
 | --- | --- | --- |
 | [agent-context-init](skills/agent-context-init/SKILL.md) | Initialize Agent-Context in a project — sets up layered context architecture, memory, and skills | `/agent-context-init [version]` |
 | [agent-context-update](skills/agent-context-update/SKILL.md) | Update Agent-Context to the latest version — refreshes shared files, preserves project config | `/agent-context-update [version]` |
-| [architecture-design](skills/architecture-design/SKILL.md) | Design system-level architecture — bounded contexts, modules, domains, ADRs | `/architecture-design [topic]` |
-| [architecture-review](skills/architecture-review/SKILL.md) | Review architecture of PR, branch, namespace, or whole project for structural issues | `/architecture-review [pr N \| branch X \| namespace path]` |
 | [atom-operating-model](skills/atom-operating-model/SKILL.md) | Agent-team operating model — coordinating PM fans out isolated worker agents across git worktrees | `/atom-operating-model [tasks to coordinate]` |
-| [branch-review](skills/branch-review/SKILL.md) | Multi-agent review of branch diff — code/security/SEO/legal/UX/perf; optional `--apply-fixes` mode | `/branch-review [base-branch] [--apply-fixes]` |
-| [component-design](skills/component-design/SKILL.md) | Design low-level component and class structure — patterns, interfaces, aggregates | `/component-design [component name]` |
-| [component-review](skills/component-review/SKILL.md) | Review class design, SOLID, cohesion, and pattern correctness | `/component-review [pr N \| branch X \| namespace path]` |
-| [full-project-review](skills/full-project-review/SKILL.md) | Multi-agent audit of the whole project (HEAD state, all repos) | `/full-project-review` |
+
+**Knowledge & Deliverables**
+
+| Skill | Description | Invoke |
+| --- | --- | --- |
 | [obsidian](skills/obsidian/SKILL.md) | Obsidian vault access via Local REST API — read, search, create, update notes | `/obsidian [search query or note path]` |
 | [session-handoff](skills/session-handoff/SKILL.md) | Generate a structured `outputs/HANDOFF.md` at the end of a session — changes, decisions, next steps | `/session-handoff [focus topics or time hint]` |
 | [tech-gazette](skills/tech-gazette/SKILL.md) | Generate a daily or weekly tech news briefing as a self-contained HTML newspaper | `/tech-gazette [--daily\|--weekly] [customers]` |
+
+## How it works
+
+A skill is just a folder with a `SKILL.md` — YAML frontmatter plus Markdown instructions. It loads in three stages (**progressive disclosure**), so the library scales without flooding the context window:
+
+1. **`name` + `description`** — always in context. The `description` is the trigger: it lists the literal phrases that should fire the skill.
+2. **`SKILL.md` body** — loaded only when the skill activates.
+3. **`references/`, `assets/`, `scripts/`** — loaded only when the body points to them.
+
+Claude-Code-only conveniences (`user-invocable`, `argument-hint`) are additive — other agents simply ignore them, so the same skill stays portable.
 
 ## Contributing
 
