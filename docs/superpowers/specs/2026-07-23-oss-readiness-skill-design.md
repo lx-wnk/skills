@@ -2,6 +2,8 @@
 
 **Status:** approved (2026-07-23) **Build via:** `/skill-builder` (not writing-plans) **Reference implementation:** [`branch-review`](../../../skills/branch-review/SKILL.md)
 
+> **Superseded during implementation:** the "generate, don't copy" decision replaced bundled `assets/` templates — community-health files are composed per-repo from probed facts. See [`references/community-health-generation.md`](../../../skills/oss-readiness/references/community-health-generation.md). The `assets/` mentions below are kept as the original design record.
+
 ## Purpose
 
 A skill that audits any repository for public-release ("OSS") readiness and, on opt-in, applies safe fixes. It generalizes work done by hand in this repo: turning the README into a front door (Why/How/Benefits) and deduplicating the docs to a single source of truth.

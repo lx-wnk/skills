@@ -7,7 +7,7 @@ description: >-
 
 user-invocable: true
 argument-hint: "[path] [--apply-fixes]"
-allowed-tools: "Bash(git *) Bash(gh *) Read Write Edit Glob Grep Agent WebFetch"
+allowed-tools: "Bash(git *) Bash(gh *) Bash(mkdir *) Bash(command *) Read Write Edit Glob Grep Agent WebFetch"
 ---
 
 # OSS Readiness
@@ -57,6 +57,8 @@ flowchart TD
 ```
 
 ### Phase 0 — Probe existing state + detect stack
+
+**If `--apply-fixes` is set, run the git guards NOW, before anything is written** (see **Apply model + git guards**). The guards must pass on the tree as the user invoked it — Phase 2 writes the report and would otherwise dirty the tree itself, so a guard checked later would falsely trip.
 
 Before judging anything, read what is already there. Detect the tech stack (`package.json`, `composer.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `pom.xml`, `Gemfile`), the CI provider (`.github/workflows/*`, `.gitlab-ci.yml`, etc.), and which of the community-health files already exist. This probe result is passed to every dimension agent in Phase 1 — see the **Probe-don't-assume rule** below.
 
@@ -144,10 +146,10 @@ The `{...}` placeholders above are author instructions for filling in the report
 - Deduplicates docs: moves a duplicated fact to its one home and replaces the other occurrences with a link — never deletes the fact outright.
 - **Escalates subjective calls** — tagline wording, license choice, prose voice — as TODOs in the report. Never guesses these.
 
-**Git guards:**
+**Git guards** (evaluated at entry, in Phase 0, before the report is written):
 
 - Refuse to run on the default branch (`main`/`master`/`develop`).
-- Refuse to run on a dirty working tree (`git status --porcelain` non-empty) — ask the user to commit or stash first.
+- Refuse to run on a dirty working tree — check `git status --porcelain -- . ':!outputs'` (excluding `outputs/`, since this skill legitimately writes the report there and a plain porcelain check would flag its own output). Non-empty → ask the user to commit or stash first.
 - **Never commit. Never push.** The user reviews and commits the changes.
 
 **GitHub metadata** (description, topics): only when `gh` is available (`command -v gh`). Confirm each change individually before applying — this is outward-facing and public. If `gh` is absent, list it as a manual TODO instead of skipping silently.
