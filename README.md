@@ -2,22 +2,39 @@
 
 [![Release](https://img.shields.io/github/v/release/lx-wnk/skills?sort=semver)](https://github.com/lx-wnk/skills/releases) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Standard: agentskills.io](https://img.shields.io/badge/standard-agentskills.io-7c3aed.svg)](https://agentskills.io) [![Install: skills.sh](https://img.shields.io/badge/install-skills.sh-000.svg)](https://skills.sh)
 
-Curated skills for AI coding agents, distributed via [skills.sh](https://skills.sh).
+Curated, agent-agnostic skills for AI coding agents — reusable workflows your agent loads on demand. They run in Claude Code, Cursor, Copilot, Windsurf, Gemini, and any other [agentskills.io](https://agentskills.io)-compatible agent.
 
-Skills are **agent-agnostic** — they work with Claude Code, Cursor, Copilot, Windsurf, Gemini, and other AI agents.
+## Why skills?
 
-## Installation
+A capable coding agent still forgets _how you want work done_. Every session you re-explain the review process, the release steps, the house style. A skill captures that process once — as an executable workflow the agent picks up automatically when the moment matches.
 
-Install all skills:
+- **Consistency** — the same review, the same release checklist, every time, regardless of who (or which agent) runs it.
+- **No prompt babysitting** — a _pushy_ `description` with explicit trigger phrases means the agent invokes the skill on its own. You say "review my branch", the workflow fires.
+- **Portable** — one open standard, many agents. Write once, run wherever your team works.
+- **Cheap to load** — only a skill's name + description sit in context by default (~100 tokens each). The full instructions load _only_ when the skill activates, so a large library costs almost nothing until used.
+- **Teeth, not vibes** — the strong skills here are processes with checkpoints and exit criteria (e.g. [`branch-review`](skills/branch-review/SKILL.md)), so the agent can't quietly skip the hard parts.
+
+## How it works
+
+A skill is just a folder with a `SKILL.md` — YAML frontmatter plus Markdown instructions. It loads in three stages (**progressive disclosure**), so the library scales without flooding the context window:
+
+1. **`name` + `description`** — always in context. The `description` is the trigger: it lists the literal phrases that should fire the skill.
+2. **`SKILL.md` body** — loaded only when the skill activates.
+3. **`references/`, `assets/`, `scripts/`** — loaded only when the body points to them.
+
+Claude-Code-only conveniences (`user-invocable`, `argument-hint`) are additive — other agents simply ignore them, so the same skill stays portable.
+
+## Install
 
 ```bash
+# all skills
 npx skills add lx-wnk/skills
-```
 
-Install a single skill:
-
-```bash
+# a single skill
 npx skills add lx-wnk/skills@branch-review
+
+# pin a release
+npx skills add lx-wnk/skills@v0.1.0
 ```
 
 ## Available Skills
@@ -28,87 +45,19 @@ npx skills add lx-wnk/skills@branch-review
 | [agent-context-update](skills/agent-context-update/SKILL.md) | Update Agent-Context to the latest version — refreshes shared files, preserves project config | `/agent-context-update [version]` |
 | [architecture-design](skills/architecture-design/SKILL.md) | Design system-level architecture — bounded contexts, modules, domains, ADRs | `/architecture-design [topic]` |
 | [architecture-review](skills/architecture-review/SKILL.md) | Review architecture of PR, branch, namespace, or whole project for structural issues | `/architecture-review [pr N \| branch X \| namespace path]` |
-| [component-design](skills/component-design/SKILL.md) | Design low-level component and class structure — patterns, interfaces, aggregates | `/component-design [component name]` |
-| [component-review](skills/component-review/SKILL.md) | Review class design, SOLID, cohesion, and pattern correctness | `/component-review [pr N \| branch X \| namespace path]` |
 | [atom-operating-model](skills/atom-operating-model/SKILL.md) | Agent-team operating model — coordinating PM fans out isolated worker agents across git worktrees | `/atom-operating-model [tasks to coordinate]` |
 | [branch-review](skills/branch-review/SKILL.md) | Multi-agent review of branch diff — code/security/SEO/legal/UX/perf; optional `--apply-fixes` mode | `/branch-review [base-branch] [--apply-fixes]` |
+| [component-design](skills/component-design/SKILL.md) | Design low-level component and class structure — patterns, interfaces, aggregates | `/component-design [component name]` |
+| [component-review](skills/component-review/SKILL.md) | Review class design, SOLID, cohesion, and pattern correctness | `/component-review [pr N \| branch X \| namespace path]` |
 | [full-project-review](skills/full-project-review/SKILL.md) | Multi-agent audit of the whole project (HEAD state, all repos) | `/full-project-review` |
 | [obsidian](skills/obsidian/SKILL.md) | Obsidian vault access via Local REST API — read, search, create, update notes | `/obsidian [search query or note path]` |
 | [session-handoff](skills/session-handoff/SKILL.md) | Generate a structured `outputs/HANDOFF.md` at the end of a session — changes, decisions, next steps | `/session-handoff [focus topics or time hint]` |
 | [tech-gazette](skills/tech-gazette/SKILL.md) | Generate a daily or weekly tech news briefing as a self-contained HTML newspaper | `/tech-gazette [--daily\|--weekly] [customers]` |
 
-## Standard & Portability
+## Contributing
 
-These skills follow the open [agentskills.io](https://agentskills.io) standard — a skill is a folder with a `SKILL.md` (YAML frontmatter + Markdown). The same skills run in Claude Code, Codex, Cursor, Gemini, and every other skills-compatible agent. Claude-Code-only conveniences (`user-invocable`, `argument-hint`) are additive: other agents ignore them.
+Adding or changing a skill? Start with **[CONTRIBUTING.md](CONTRIBUTING.md)** for the workflow, and **[STYLEGUIDE.md](STYLEGUIDE.md)** for the detailed authoring rules.
 
-## Registry & Versioning
+## License
 
-| Artifact | Role |
-| --- | --- |
-| `skills.json` | Authoritative, machine-readable manifest (name, description, path, license per skill + repo version). Committed. |
-| Git tags `vX.Y.Z` | The version source. Consumers pin a release, e.g. `npx skills add lx-wnk/skills@v0.1.0`. |
-| `outputs/index.md` | Agent-Context `skills/index.md` format, generated on demand. |
-| `outputs/skills-lock.json` | Agent-Dashboard lock, generated on demand. |
-
-The whole set is versioned together at the repo level (one tag), not per skill. Downstream repos (`Agent-Context` `plugins.json`, `Agent-Dashboard` `skills-lock.json`) resolve against a tag.
-
-> `outputs/` does not exist in a fresh clone (it is gitignored) — run `npm run sync` first, or consume the copies written into the sibling repos via `--index-out` / `--lock-out`. Only `skills.json` is committed.
-
-### Sync script
-
-`scripts/sync-registry.mjs` is the single source of truth for registry consistency. It validates every `SKILL.md` against the standard, then regenerates the artifacts above.
-
-```bash
-npm run sync          # validate + write skills.json, outputs/index.md, outputs/skills-lock.json
-npm run sync:check    # validate + fail if skills.json is stale (CI gate)
-
-# write generated files straight into the sibling repos (opt-in):
-node scripts/sync-registry.mjs \
-  --index-out ../Agent-Context/templates/.agent-context/skills/index.md \
-  --lock-out  ../Agent-Dashboard/skills-lock.json
-```
-
-Validation is hard-failing: a bad `name`, a `name` that does not match its directory, a missing field, or a `description` over 1024 characters exits non-zero.
-
-**Version provenance.** `version()` resolves from `SKILLS_VERSION`, else `git describe --tags` (distance-honest: `v0.1.0-3-gSHA` on a post-tag commit), else `0.0.0-dev`. The committed `skills.json` must always carry a **clean release tag** (`vX.Y.Z`) — regenerate it at release time with `SKILLS_VERSION=vX.Y.Z npm run sync`, not on every commit. `sync:check` enforces this: it compares `skills.json` content version-agnostically (HEAD may be ahead of the tag) but fails if the committed version is not a clean release tag, or if an explicitly passed `--index-out` / `--lock-out` target is stale.
-
-## Authoring a Skill
-
-Each skill lives in its own folder: `skills/<skill-name>/SKILL.md`. See [CLAUDE.md](CLAUDE.md) and [STYLEGUIDE.md](STYLEGUIDE.md) for the full conventions; the essentials:
-
-### Frontmatter contract
-
-```yaml
----
-name: my-skill # required: lowercase a-z0-9 + single hyphens, ≤64 chars, MUST equal the folder name
-license: MIT
-description: > # required: ≤1024 chars; what it does AND when to fire, with explicit trigger phrases (EN + DE)
-  ...
-
-
-user-invocable: true # Claude Code: callable as /my-skill
-argument-hint: "[arg]" # required when user-invocable (use "" if none)
-allowed-tools: "Bash(git *) Read Edit" # pre-approved tools
----
-```
-
-### Progressive disclosure (keep the budget)
-
-1. **`name` + `description`** (~100 tokens) — loaded for every skill at startup. Make the description _pushy_: list the literal phrases a user might say. Claude under-triggers skills.
-2. **`SKILL.md` body** (< ~5000 tokens, < 500 lines) — loaded only on activation.
-3. **Reference files** (`references/`, `assets/`, `scripts/`) — loaded only when the body points to them. Split anything over ~300–500 lines out.
-
-### Write skills as a PROCESS, not prose
-
-The strongest skills are workflows with teeth, not reference essays. Use [`branch-review`](skills/branch-review/SKILL.md) as the reference implementation. It demonstrates the pattern:
-
-- **Checkpoints** — a numbered execution order, not a wall of advice.
-- **Exit criteria** — an explicit checklist; the task is not "done" until every box holds.
-- **Anti-rationalization table** — maps each tempting excuse ("while I'm here…") to the rule that overrides it, so the agent cannot rationalize its way out of discipline.
-
-### Before you commit
-
-```bash
-npm run sync          # validate + regenerate the manifest
-npm run prettier:fix  # format
-```
+[MIT](LICENSE)
