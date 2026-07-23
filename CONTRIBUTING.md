@@ -22,7 +22,7 @@ The set is versioned together at the repo level (one git tag), not per skill. Do
 | Artifact | Role |
 | --- | --- |
 | `skills.json` | Authoritative, machine-readable manifest (name, description, path, license per skill + repo version). **Committed.** |
-| Git tags `vX.Y.Z` | The version source. Consumers pin a release, e.g. `npx skills add lx-wnk/skills@v0.1.0`. |
+| Git tags `vX.Y.Z` | The version source. Consumers pin a release, e.g. `npx skills add lx-wnk/skills@v0.2.0`. |
 | `outputs/index.md` | Agent-Context `skills/index.md` format. Generated on demand. |
 | `outputs/skills-lock.json` | Agent-Dashboard lock. Generated on demand. |
 
@@ -55,7 +55,7 @@ npm run prettier:fix  # format
 
 Commit the regenerated `skills.json`. `npm run sync:check` is the CI gate — it fails on the same validation errors above.
 
-When you add or rename a skill, also update the `## Available Skills` table in [README.md](README.md) (rows sorted alphabetically, `Invoke` column matching the `argument-hint`).
+When you add or rename a skill, also update the `## Available Skills` tables in [README.md](README.md) — add the row to the matching category group, alphabetical within the group (see [STYLEGUIDE §12](STYLEGUIDE.md#12-readme)); the `Invoke` column must match the `argument-hint`.
 
 ## Conventions
 

@@ -25,7 +25,7 @@ npx skills add lx-wnk/skills
 npx skills add lx-wnk/skills@branch-review
 
 # pin a release
-npx skills add lx-wnk/skills@v0.1.0
+npx skills add lx-wnk/skills@v0.2.0
 ```
 
 ## Quick example
@@ -34,7 +34,7 @@ Once installed, just talk to your agent in plain language:
 
 > **You:** review my branch
 
-`branch-review` fires on its own — no slash command, no setup. It spawns parallel agents for code quality, security, SEO, UX, and performance, then consolidates everything into a prioritized `outputs/Findings.md`. The skill matched your intent from its trigger phrases.
+`branch-review` fires on its own — no slash command, no setup. It spawns parallel agents for code quality, security, SEO, legal, UX, and performance, then consolidates everything into a prioritized `outputs/Findings.md`. The skill matched your intent from its trigger phrases.
 
 Prefer to be explicit? Every skill is also a slash command: `/branch-review`.
 
