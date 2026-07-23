@@ -155,8 +155,8 @@ For skills that commit on the user's behalf:
 
 When adding or renaming a skill:
 
-- Update the `## Available Skills` table in `README.md`.
-- Keep rows alphabetically sorted by skill name.
+- Update the `## Available Skills` tables in `README.md`.
+- Add the row to the matching category group; keep rows alphabetical within each group. If no group fits, propose a new one rather than dropping the skill into an unrelated table.
 - The `Invoke` column should match the `argument-hint` from the frontmatter.
 - Single-skill `npx skills add` install example should reference an actually existing skill.
 
