@@ -1,6 +1,6 @@
 {
   "name": "lx-wnk/skills",
-  "version": "v0.1.0",
+  "version": "v0.2.0",
   "license": "MIT",
   "standard": "agentskills.io",
   "skills": [
@@ -62,6 +62,12 @@
       "name": "obsidian",
       "description": "Obsidian vault access via Local REST API using curl — read, search, create, or update notes in the knowledge base. Trigger on ANY of these: user mentions \"obsidian\", \"vault\", \"knowledge base\", \"my notes\", or \"note\" in a save/lookup context; user asks to \"save\", \"persist\", \"document\", \"note down\", or \"look up\" information; phrases like \"note this down\", \"add this to my knowledge base\", \"search my notes\", \"check if I have notes on X\", \"create a note\"; CLAUDE.md says to search or store in Obsidian before/after tasks — do it proactively; starting a task where prior context might exist → search first; mid-task discovery of a non-obvious insight, gotcha, root cause, or workaround → save it; finishing a task with decisions or learnings worth remembering → persist it; something written to CLAUDE.md or project docs → also save it for cross-project search.",
       "path": "skills/obsidian",
+      "license": "MIT"
+    },
+    {
+      "name": "oss-readiness",
+      "description": "Audits a repository for public-release (\"open source\") readiness: README front-door quality (Why/How/Benefits, badges, quick example, section order), doc deduplication, community-health files (LICENSE, CONTRIBUTING, SECURITY, CODE_OF_CONDUCT, issue/PR templates), and repo signals (description, topics, CI badge, releases, .gitignore, secrets). Fans out 4 parallel dimension agents into outputs/OSS-Readiness.md, P0-P3 findings. --apply-fixes drafts missing community-health files tailored to the repo, adds a CI badge, reorders README, dedups docs — escalates subjective calls (tagline, license choice, prose voice) as TODOs, never guesses. Use for \"oss readiness\", \"prep for public release\", \"audit my repo for open source\", \"make this repo public-ready\", \"readme tuning\", \"make it presentable\", or German \"fit für open source\", \"repo veröffentlichen\", \"readme aufhübschen\", \"public-ready machen\", \"oss-check\". Does NOT review source-code quality/security — use /branch-review or /full-project-review.",
+      "path": "skills/oss-readiness",
       "license": "MIT"
     },
     {

@@ -1,15 +1,10 @@
 # oss-readiness skill — design
 
-**Status:** approved (2026-07-23)
-**Build via:** `/skill-builder` (not writing-plans)
-**Reference implementation:** [`branch-review`](../../../skills/branch-review/SKILL.md)
+**Status:** approved (2026-07-23) **Build via:** `/skill-builder` (not writing-plans) **Reference implementation:** [`branch-review`](../../../skills/branch-review/SKILL.md)
 
 ## Purpose
 
-A skill that audits any repository for public-release ("OSS") readiness and, on
-opt-in, applies safe fixes. It generalizes work done by hand in this repo:
-turning the README into a front door (Why/How/Benefits) and deduplicating the
-docs to a single source of truth.
+A skill that audits any repository for public-release ("OSS") readiness and, on opt-in, applies safe fixes. It generalizes work done by hand in this repo: turning the README into a front door (Why/How/Benefits) and deduplicating the docs to a single source of truth.
 
 ## Scope
 
@@ -38,11 +33,7 @@ docs to a single source of truth.
 
 ## Execution: multi-agent fan-out
 
-Parallel subagents, one per dimension, consolidated into a single report.
-Each dimension **probes existing state before judging** — detect stack
-(`package.json`, `composer.json`, `pyproject.toml`, `go.mod`), CI provider, and
-which files already exist. Never assume a file is missing; never clobber an
-existing one.
+Parallel subagents, one per dimension, consolidated into a single report. Each dimension **probes existing state before judging** — detect stack (`package.json`, `composer.json`, `pyproject.toml`, `go.mod`), CI provider, and which files already exist. Never assume a file is missing; never clobber an existing one.
 
 | # | Dimension agent | Checks |
 | --- | --- | --- |
@@ -62,8 +53,7 @@ existing one.
 - fix (concrete)
 - `auto-fixable: yes | no | manual`
 
-Placeholders/comments in the schema are author-instructions and must not appear
-in the emitted file (per STYLEGUIDE §6).
+Placeholders/comments in the schema are author-instructions and must not appear in the emitted file (per STYLEGUIDE §6).
 
 ## Apply model (mirrors branch-review)
 
