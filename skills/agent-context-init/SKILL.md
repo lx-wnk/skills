@@ -3,7 +3,7 @@ name: agent-context-init
 license: MIT
 description: 'Initialize Agent-Context in the current project — sets up the layered context architecture with shared infrastructure, project-specific layers, memory stubs, and skill registry. Use this skill whenever the user asks to initialize Agent-Context, set up Agent-Context, bootstrap Agent-Context, or says things like "init agent-context", "set up context layers", "add agent-context to this project". Also use when the user wants to start using Agent-Context in a new or existing project.'
 user-invocable: true
-argument-hint: "[version tag, e.g. v0.2.1, or leave empty for latest]"
+argument-hint: "[version tag, e.g. 0.8.1 (no v prefix), or leave empty for latest]"
 allowed-tools: "Bash(gh *) Bash(curl *) Read Write WebFetch Agent"
 ---
 
@@ -34,10 +34,12 @@ ls .agent-context/.agent-context-version 2>/dev/null
 
 ## Setup
 
-Fetch the setup prompt from the Agent-Context repo and follow its instructions:
+Resolve the target release tag first, then fetch the setup prompt pinned to that tag and follow its instructions. Fetching a specific release tag (never the mutable `main` branch) is deliberate: the tag is pinned for the whole run, so the fetched prompt is fixed between resolution and execution, and it changes only when a new release is published — unlike `main`, which every push mutates. (Full tamper-resistance additionally requires tag/release protection on the source repo.)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/lx-wnk/Agent-Context/main/.prompts/setup-prompt.md
+# Resolve target version: explicit $ARGUMENTS, else latest release (never mutable `main`)
+TAG="${ARGUMENTS:-$(gh api repos/lx-wnk/Agent-Context/releases/latest --jq .tag_name)}"
+curl -fsSL "https://raw.githubusercontent.com/lx-wnk/Agent-Context/${TAG}/.prompts/setup-prompt.md"
 ```
 
 Follow the fetched instructions exactly. The setup prompt handles:
