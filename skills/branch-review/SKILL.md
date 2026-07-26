@@ -281,7 +281,7 @@ Recommendation: <A | B | C> — <one-sentence justification>
 
 At the end: "Which options should I implement? (e.g. 1.B, 2.A, 3.C)"
 
-After the user's reply: implement the options, one commit per affected concern, then `git push`.
+After the user's reply: implement the options, one commit per affected concern. Push follows the gated Push Strategy (step 8) — after the Simplify Pass and final gate, never immediately here.
 
 ### Simplify Pass (`/simplify`)
 
