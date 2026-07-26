@@ -212,7 +212,7 @@ Do not report the review as done, and do not enter the auto-fix phase, until eve
 
 ## Optional Phase: Auto-Fix (`--apply-fixes`)
 
-**Default is read-only.** The following phase runs after step 8 (verification pass) ONLY if `$ARGUMENTS` contains the flag `--apply-fixes`.
+**Default is read-only.** The following phase runs after step 7 (verification pass) ONLY if `$ARGUMENTS` contains the flag `--apply-fixes`.
 
 This phase applies clear fixes directly to the branch and escalates design decisions to the user. It replaces the former `review-and-fix` skill.
 
@@ -287,6 +287,7 @@ After the user's reply: implement the options, one commit per affected concern. 
 
 Runs as step 6, after all functional fixes are committed, unless `$ARGUMENTS` contains `--no-simplify`.
 
+- **Skip if the baseline gate (step 2) was red.** Do not simplify on an already-broken baseline — record `simplify skipped: baseline red` and proceed with no simplify edits. This also avoids leaving simplify edits with no disposition.
 - **Feature-detect** whether the `/simplify` built-in is available in this environment (cf. STYLEGUIDE §8). If absent → skip, record `simplify skipped: not available` in the Auto-Fix Summary, continue to the final gate. No hard failure.
 - If disabled via `--no-simplify` → skip, record `simplify skipped: --no-simplify`.
 - Otherwise invoke `/simplify`, passing the changed-files scope as its target. `/simplify` reviews the changed code for reuse, simplification, efficiency, and altitude cleanups and applies fixes **directly to the working tree** — it does not commit. It self-skips any fix that would change intended behavior.
@@ -308,12 +309,12 @@ baseline green + final green:
 baseline green + final red:
     if simplify ran (edits uncommitted):
         git restore the simplify edits → re-run gate
-            green now  → simplify was the culprit; discarded; log "simplify reverted: broke tests"; done
+            green now  → simplify was the culprit; discarded; log "simplify discarded: broke tests"; done
             still red  → functional fixes are the culprit → ESCALATE to user, do not discard their commits
     if simplify did not run:
         functional fixes are the culprit → ESCALATE to user
 baseline already red:
-    not our fault → report in the summary; discard nothing, commit nothing from simplify
+    not our fault → report; simplify was skipped (baseline red), so it left no edits to discard or commit
 no test/lint command detected:
     skip the gate → log "no gate available"; commit the simplify edits relying on
     /simplify's own behavior-preservation, and flag in the summary that no gate verified them
@@ -337,7 +338,7 @@ After the auto-fix phase, append a new section `## Auto-Fix Summary` to `Finding
 - Out-of-scope findings: N (with finding IDs and reason)
 - Discarded hypotheses (not reproducible on branch): N (with finding IDs)
 - Gate result: `baseline <green|red> → final <green|red>` + the test/lint command used (or `no gate available`)
-- Simplify status: `applied (N edits, <sha>)` | `skipped: not available` | `skipped: --no-simplify` | `reverted: broke tests`
+- Simplify status: `applied (N edits, <sha>)` | `skipped: not available` | `skipped: --no-simplify` | `skipped: baseline red` | `discarded: broke tests`
 
 This keeps it traceable what the skill changed in the code — and what the user still needs to decide.
 

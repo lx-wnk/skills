@@ -93,11 +93,11 @@ no test/lint command detected:
 Append to the existing `## Auto-Fix Summary` section in `Findings.md`:
 
 - Gate result: `baseline <green|red> → final <green|red>` + test/lint command used (or "no gate available").
-- Simplify status: `applied (N edits)` | `skipped: not available` | `skipped: --no-simplify` | `reverted: broke tests`.
+- Simplify status: `applied (N edits)` | `skipped: not available` | `skipped: --no-simplify` | `skipped: baseline red` | `discarded: broke tests`.
 
 ### D. Soft-Dependency Convention in STYLEGUIDE
 
-New section `## Soft Dependencies on Non-Vendored Commands`:
+Extend §8 "External Tool & Command Probes" with a new subsection `### Soft dependencies on non-vendored built-in commands`:
 
 - **Feature-detect before invoke.** A skill must not assume a non-vendored built-in (e.g. `/simplify`, `/code-review`) exists. Check availability first.
 - **Graceful skip, never hard-fail.** Missing built-in → skip the step, continue the rest.
