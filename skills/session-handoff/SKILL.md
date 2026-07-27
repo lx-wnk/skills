@@ -118,8 +118,8 @@ Section headers in the template are shown in English; translate them to the user
 
 ```markdown
 ---
-handoff-date: { DATE_UTC }
-handoff-slug: { TOPIC_SLUG }
+handoff-date: "{DATE_UTC}"
+handoff-slug: "{TOPIC_SLUG}"
 ---
 
 # Session Handoff — {DATE_UTC}
