@@ -7,7 +7,7 @@ description: >-
 
 user-invocable: true
 argument-hint: "[focus topics or time hint, e.g. 'Focus: Auth refactoring' or 'since Monday']"
-allowed-tools: "Bash(git *) Bash(date *) Bash(basename *) Bash(mkdir *) Read Write Edit"
+allowed-tools: "Bash(git *) Bash(date *) Bash(basename *) Bash(mkdir *) Bash(mv *) Read Write Edit"
 ---
 
 # Session Handoff
@@ -87,7 +87,7 @@ Optionally read files the git data identifies as central (e.g. files with the la
 mkdir -p outputs/handoffs
 ```
 
-**One-time legacy migration:** if a legacy `outputs/HANDOFF.md` exists and there is no `outputs/handoffs/latest.md` yet, move it once so nothing is lost. Use the date from the legacy file's top `# Session Handoff — {DATE}` header if present, else today's UTC date:
+**One-time legacy migration:** if a legacy `outputs/HANDOFF.md` exists and there is no `outputs/handoffs/latest.md` yet, move it once so nothing is lost. Use the date from the legacy file's top `# Session Handoff — {DATE}` header if present, else today's UTC date. If the target already exists, suffix `-2`, `-3`, … — never overwrite:
 
 ```bash
 mv outputs/HANDOFF.md "outputs/handoffs/<legacy-date>-legacy.md"
