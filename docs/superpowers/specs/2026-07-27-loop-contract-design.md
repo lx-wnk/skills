@@ -89,7 +89,7 @@ Plan-Mode is the stronger form of the pattern: a plan supplies its own progress 
 
 Three checks; all must pass.
 
-1. **Done-state expressible** — can a shell command be written whose exit code decides the goal? (Plan-Mode: for every item.)
+1. **Done-state expressible** — can a shell command be written whose exit code decides the goal? (Plan-Mode: applied per item — see below.)
 2. **Progress signal exists** — does something observable change between rounds (failure count, grep hits, items done)?
 3. **Scope boundable** — can allowed paths be named?
 
