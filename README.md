@@ -70,7 +70,7 @@ Prefer to be explicit? Every skill is also a slash command: `/branch-review`.
 | Skill | Description | Invoke |
 | --- | --- | --- |
 | [obsidian](skills/obsidian/SKILL.md) | Obsidian vault access via Local REST API — read, search, create, update notes | `/obsidian [search query or note path]` |
-| [session-handoff](skills/session-handoff/SKILL.md) | Generate a structured `outputs/HANDOFF.md` at the end of a session — changes, decisions, next steps | `/session-handoff [focus topics or time hint]` |
+| [session-handoff](skills/session-handoff/SKILL.md) | Generate a structured `outputs/handoffs/latest.md` at the end of a session — changes, decisions, next steps; rotates the previous handoff to a dated archive | `/session-handoff [focus topics or time hint]` |
 | [tech-gazette](skills/tech-gazette/SKILL.md) | Generate a daily or weekly tech news briefing as a self-contained HTML newspaper | `/tech-gazette [--daily\|--weekly] [customers]` |
 
 ## How it works
