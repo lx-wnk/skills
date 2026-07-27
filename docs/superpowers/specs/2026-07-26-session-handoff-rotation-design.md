@@ -1,9 +1,6 @@
 # Session-Handoff: Rotating `latest.md` + Archived Handoffs
 
-**Date:** 2026-07-26
-**Status:** Approved (design), pending spec review
-**Scope:** `skills/session-handoff/SKILL.md`, `STYLEGUIDE.md`
-**Out of scope:** tracking handoffs in git (they stay under gitignored `outputs/`)
+**Date:** 2026-07-26 **Status:** Approved (design), pending spec review **Scope:** `skills/session-handoff/SKILL.md`, `STYLEGUIDE.md` **Out of scope:** tracking handoffs in git (they stay under gitignored `outputs/`)
 
 ## Problem
 
@@ -65,12 +62,14 @@ handoff-slug: auth-refactor
 ### D. Legacy migration (one-time, safe)
 
 If a legacy `outputs/HANDOFF.md` exists AND `outputs/handoffs/` does not yet:
+
 - move it once to `outputs/handoffs/{date}-legacy.md` (date parsed from its top section, else today's date).
 - Nothing is lost; the new scheme starts clean. This runs before the normal rotation flow on the first invocation after upgrade.
 
 ### E. Step 4 confirmation
 
 Report to the user:
+
 - path of the new `outputs/handoffs/latest.md`
 - which archive file the previous handoff was rotated into (or "first handoff, nothing rotated")
 - count summary: commits, open questions, next steps
