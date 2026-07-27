@@ -64,6 +64,7 @@ Prefer to be explicit? Every skill is also a slash command: `/branch-review`.
 | [agent-context-init](skills/agent-context-init/SKILL.md) | Initialize Agent-Context in a project — sets up layered context architecture, memory, and skills | `/agent-context-init [version]` |
 | [agent-context-update](skills/agent-context-update/SKILL.md) | Update Agent-Context to the latest version — refreshes shared files, preserves project config | `/agent-context-update [version]` |
 | [atom-operating-model](skills/atom-operating-model/SKILL.md) | Agent-team operating model — coordinating PM fans out isolated worker agents across git worktrees | `/atom-operating-model [tasks to coordinate]` |
+| [loop-contract](skills/loop-contract/SKILL.md) | Compile a prompt or concept doc into a machine-checkable loop contract, then run it autonomously under a deterministic budget | `/loop-contract <prompt \| path/to/concept.md> [--max-iterations N] [--dry-run]` |
 
 **Knowledge & Deliverables**
 
