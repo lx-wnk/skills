@@ -44,8 +44,10 @@ Do not rely on `@{N hours ago}` — that reflog syntax is empty on fresh clones 
 ## Step 2: Collect data
 
 ```bash
-# Date/time with timezone → fills {DATE_UTC}
+# Date/time with timezone → fills {DATE_UTC} (display header)
 date -u '+%Y-%m-%d %H:%M UTC'
+# Date only, no time → fills {DATE} (handoff-date frontmatter + archive filenames)
+date -u '+%Y-%m-%d'
 
 # Repo name → fills {REPO-NAME}
 basename "$(git rev-parse --show-toplevel)"
@@ -87,7 +89,7 @@ Optionally read files the git data identifies as central (e.g. files with the la
 mkdir -p outputs/handoffs
 ```
 
-**One-time legacy migration:** if a legacy `outputs/HANDOFF.md` exists and there is no `outputs/handoffs/latest.md` yet, move it once so nothing is lost. Use the date from the legacy file's top `# Session Handoff — {DATE}` header if present, else today's UTC date. If the target already exists, suffix `-2`, `-3`, … — never overwrite:
+**One-time legacy migration:** if a legacy `outputs/HANDOFF.md` exists and there is no `outputs/handoffs/latest.md` yet, move it once so nothing is lost. Use the leading `YYYY-MM-DD` date from the legacy file's top `# Session Handoff — {DATE_UTC}` header if present (drop the time), else today's UTC date. If the target already exists, suffix `-2`, `-3`, … — never overwrite:
 
 ```bash
 mv outputs/HANDOFF.md "outputs/handoffs/<legacy-date>-legacy.md"
@@ -104,7 +106,7 @@ Slugify: lowercase, kebab-case, ASCII only, collapse spaces/underscores to `-`, 
 **Rotate the existing latest** — if `outputs/handoffs/latest.md` exists:
 
 1. Read its YAML frontmatter → `handoff-date` and `handoff-slug`.
-   - Fallback when the frontmatter is missing or corrupt: parse the date from the `# Session Handoff — {DATE}` header line and use the slug `session`.
+   - Fallback when the frontmatter is missing or corrupt: parse the leading `YYYY-MM-DD` date out of the `# Session Handoff — {DATE_UTC}` header line (drop the time) and use the slug `session`.
 2. Compute the archive target `outputs/handoffs/{handoff-date}-{handoff-slug}.md`. If that file already exists, append `-2`, `-3`, … until the name is free. **Never overwrite** — a lost handoff is expensive.
 3. `mv outputs/handoffs/latest.md <target>`.
 
@@ -118,7 +120,7 @@ Section headers in the template are shown in English; translate them to the user
 
 ```markdown
 ---
-handoff-date: "{DATE_UTC}"
+handoff-date: "{DATE}"
 handoff-slug: "{TOPIC_SLUG}"
 ---
 

@@ -95,7 +95,7 @@ Never have a skill silently switch from read-only to write based on inference â€
 
 Skills that emit a deliverable file:
 
-- Write to `outputs/<filename>` (e.g. `outputs/Findings.md`, `outputs/handoffs/latest.md`).
+- Write to `outputs/<filename>` (e.g. `outputs/Findings.md`).
 - Create the directory with `mkdir -p outputs` rather than failing if it doesn't exist.
 - The repository's `.gitignore` is responsible for ignoring `outputs/` â€” a skill must not modify `.gitignore` itself.
 - If the file already exists: default to **appending a new dated section** above the existing content. Only ask the user before overwriting.
