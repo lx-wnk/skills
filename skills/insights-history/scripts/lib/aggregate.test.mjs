@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { aggregate, canonicalFriction, isReportable, delta } from "./aggregate.mjs";
+import { aggregate, canonicalFriction, isReportable, delta, isKnownFriction } from "./aggregate.mjs";
 
 function session(overrides) {
   return {
@@ -24,9 +24,18 @@ function session(overrides) {
 }
 
 test("canonicalFriction collapses the built-in's duplicate spellings", () => {
-  assert.equal(canonicalFriction("permission_blocks"), "permission_block");
-  assert.equal(canonicalFriction("permission_block"), "permission_block");
-  assert.equal(canonicalFriction("environment_issues"), "environment_issue");
+  assert.equal(canonicalFriction("permission_blocks"), "claude_got_blocked");
+  assert.equal(canonicalFriction("permission_block"), "claude_got_blocked");
+  assert.equal(canonicalFriction("environment_issues"), "external_issue");
+  assert.equal(canonicalFriction("buggy_code"), "buggy_code");
+});
+
+test("canonicalFriction merges the synonym clusters seen in real data", () => {
+  assert.equal(canonicalFriction("permission_interruption"), "claude_got_blocked");
+  assert.equal(canonicalFriction("permission_blocks"), "claude_got_blocked");
+  assert.equal(canonicalFriction("tool_environment_issue"), "external_issue");
+  assert.equal(canonicalFriction("incomplete_task"), "incomplete_solution");
+  assert.equal(canonicalFriction("incomplete_fix"), "incomplete_solution");
   assert.equal(canonicalFriction("buggy_code"), "buggy_code");
 });
 
@@ -68,8 +77,24 @@ test("aggregate normalises friction keys across sessions", () => {
   ]);
   const sessions = [session({ session_id: "a" }), session({ session_id: "b" })];
   const { buckets } = aggregate(sessions, facets, { granularity: "week" });
-  assert.deepEqual(buckets[0].friction, { permission_block: 3 });
+  assert.deepEqual(buckets[0].friction, { claude_got_blocked: 3 });
   assert.deepEqual(buckets[0].outcomes, { fully_achieved: 1, mostly_achieved: 1 });
+});
+
+test("aggregate reports friction keys outside the known vocabulary", () => {
+  const facets = new Map([
+    [
+      "a",
+      {
+        outcome: "fully_achieved",
+        goal_categories: { fix_bug: 1 },
+        friction_counts: { buggy_code: 2, agent_stall: 3 },
+      },
+    ],
+  ]);
+  const { buckets } = aggregate([session({ session_id: "a" })], facets, { granularity: "week" });
+  assert.deepEqual(buckets[0].friction, { buggy_code: 2, agent_stall: 3 });
+  assert.deepEqual(buckets[0].frictionUnknown, { agent_stall: 3 });
 });
 
 test("delta reports signed absolute and percentage change", () => {
@@ -80,4 +105,16 @@ test("delta reports signed absolute and percentage change", () => {
   assert.equal(d.sessions.percent, -50);
   assert.equal(d.commits.absolute, 50);
   assert.equal(d.commits.percent, 50);
+});
+
+test("delta reports a null percentage when the baseline is zero", () => {
+  const d = delta({ commits: 0 }, { commits: 5 });
+  assert.equal(d.commits.absolute, 5);
+  assert.equal(d.commits.percent, null);
+});
+
+test("delta keeps metrics that appear on only one side", () => {
+  const d = delta({ commits: 4 }, { commits: 4, pushes: 2 });
+  assert.equal(d.pushes.absolute, 2);
+  assert.equal(d.pushes.percent, null);
 });

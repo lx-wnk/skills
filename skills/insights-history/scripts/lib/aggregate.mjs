@@ -1,14 +1,44 @@
 import { bucketKey } from "./range.mjs";
 
+// The vocabulary the tool being mirrored actually defines. Anything outside
+// this set was invented ad hoc by a language model against a validator that
+// checks types but not values, so the set of stray keys is open-ended.
+const KNOWN_FRICTION = new Set([
+  "misunderstood_request",
+  "wrong_approach",
+  "buggy_code",
+  "user_rejected_action",
+  "claude_got_blocked",
+  "user_stopped_early",
+  "wrong_file_or_location",
+  "excessive_changes",
+  "slow_or_verbose",
+  "tool_failed",
+  "user_unclear",
+  "external_issue",
+  "incomplete_solution",
+]);
+
 const FRICTION_ALIASES = {
-  permission_blocks: "permission_block",
-  environment_issues: "environment_issue",
+  permission_blocks: "claude_got_blocked",
+  permission_block: "claude_got_blocked",
+  permission_interruption: "claude_got_blocked",
+  environment_issues: "external_issue",
+  environment_issue: "external_issue",
+  tool_environment_issue: "external_issue",
   tool_failures: "tool_failed",
   tool_failure: "tool_failed",
+  incomplete_task: "incomplete_solution",
+  incomplete_fix: "incomplete_solution",
+  user_interrupted: "user_stopped_early",
 };
 
 export function canonicalFriction(key) {
   return FRICTION_ALIASES[key] ?? key;
+}
+
+export function isKnownFriction(key) {
+  return KNOWN_FRICTION.has(canonicalFriction(key));
 }
 
 export function isReportable(meta, facet) {
@@ -41,6 +71,7 @@ function emptyBucket(key) {
     outcomes: {},
     helpfulness: {},
     friction: {},
+    frictionUnknown: {},
   };
 }
 
@@ -83,7 +114,10 @@ export function aggregate(sessions, facets, { granularity }) {
     if (facet.outcome) tally(bucket.outcomes, facet.outcome);
     if (facet.claude_helpfulness) tally(bucket.helpfulness, facet.claude_helpfulness);
     for (const [name, count] of Object.entries(facet.friction_counts ?? {})) {
-      if (count > 0) tally(bucket.friction, canonicalFriction(name), count);
+      if (count <= 0) continue;
+      const canonical = canonicalFriction(name);
+      tally(bucket.friction, canonical, count);
+      if (!isKnownFriction(name)) tally(bucket.frictionUnknown, canonical, count);
     }
   }
 
@@ -119,12 +153,15 @@ export function aggregate(sessions, facets, { granularity }) {
 
 export function delta(before, after) {
   const result = {};
-  for (const key of Object.keys(before)) {
-    if (typeof before[key] !== "number" || typeof after[key] !== "number") continue;
-    const absolute = after[key] - before[key];
+  const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
+  for (const key of keys) {
+    const from = typeof before[key] === "number" ? before[key] : 0;
+    const to = typeof after[key] === "number" ? after[key] : 0;
+    if (typeof before[key] !== "number" && typeof after[key] !== "number") continue;
+    const absolute = to - from;
     result[key] = {
       absolute,
-      percent: before[key] === 0 ? null : Math.round((absolute / before[key]) * 100),
+      percent: from === 0 ? null : Math.round((absolute / from) * 100),
     };
   }
   return result;
