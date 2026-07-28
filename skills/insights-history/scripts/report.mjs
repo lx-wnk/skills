@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { mkdir, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir } from "node:fs/promises";
 import { join, basename } from "node:path";
-import { paths, usageDataRoot, readJson } from "./lib/store.mjs";
+import { paths, usageDataRoot, readJson, writeBufferAtomic } from "./lib/store.mjs";
 import { parsePeriod, autoGranularity } from "./lib/range.mjs";
 import { aggregate, isReportable, delta } from "./lib/aggregate.mjs";
 import { renderReport } from "./lib/render.mjs";
@@ -72,6 +72,13 @@ try {
   process.exit(2);
 }
 
+if (start > end) {
+  process.stderr.write(
+    `empty range: start ${start.toISOString().slice(0, 10)} is after end ${end.toISOString().slice(0, 10)}\n`,
+  );
+  process.exit(2);
+}
+
 const granularity = flag(argv, "--by") ?? autoGranularity(start, end);
 // parsePeriod returns an inclusive end (last millisecond of the final day),
 // so no day-padding is needed here.
@@ -111,8 +118,11 @@ const html = renderReport({ buckets, totals, range, granularity, narrative, comp
 await mkdir(p.reports, { recursive: true });
 const stamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
 const target = join(p.reports, `history-${range.start}_${range.end}-${stamp}.html`);
-await writeFile(target, html);
-await writeFile(join(p.reports, "latest.html"), html);
+// Atomic, so a concurrent run or a mid-write failure can never leave a torn
+// latest.html behind. The timestamped file is written first: latest.html is
+// the pointer, and a pointer must never be newer than what it points at.
+await writeBufferAtomic(target, html);
+await writeBufferAtomic(join(p.reports, "latest.html"), html);
 
 process.stdout.write(`${target}\n`);
 process.stdout.write(

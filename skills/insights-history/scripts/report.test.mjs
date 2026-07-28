@@ -75,12 +75,55 @@ test("report honours --since and --until", async () => {
   assert.equal(summary.sessions, 1);
 });
 
-test("report fails loudly on an unparsable period", async () => {
+test("an unparsable period exits 2, writes nothing to stdout, and creates no report", async () => {
   const data = await withData();
   await assert.rejects(
-    () => report(data, ["--since", "2026-6-1"]),
+    () => report(data, ["--since", "2026-13"]),
     (error) => {
-      assert.match(error.stderr, /YYYY-MM-DD/);
+      assert.equal(error.code, 2);
+      assert.equal(error.stdout, "");
+      assert.match(error.stderr, /month 13 is out of range/);
+      return true;
+    },
+  );
+  await assert.rejects(() => readdir(join(data, "reports")));
+});
+
+test("every shape-valid but calendar-invalid token is rejected", async () => {
+  const data = await withData();
+  for (const token of ["2026-13", "2026-06-31", "2026-W99", "0d"]) {
+    await assert.rejects(
+      () => report(data, ["--since", token]),
+      (error) => {
+        assert.equal(error.code, 2, `expected exit 2 for ${token}`);
+        return true;
+      },
+    );
+  }
+});
+
+test("an inverted range fails loudly instead of reporting on nothing", async () => {
+  const data = await withData();
+  await assert.rejects(
+    () => report(data, ["--since", "2026-07-01", "--until", "2026-06-01"]),
+    (error) => {
+      assert.equal(error.code, 2);
+      assert.match(error.stderr, /empty range/);
+      return true;
+    },
+  );
+  await assert.rejects(() => readdir(join(data, "reports")));
+});
+
+test("an empty data root exits 1 rather than producing an empty report", async () => {
+  const { mkdtemp } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const empty = await mkdtemp(join(tmpdir(), "report-empty-"));
+  await assert.rejects(
+    () => report(empty, []),
+    (error) => {
+      assert.equal(error.code, 1);
+      assert.match(error.stderr, /no session metadata found/);
       return true;
     },
   );
