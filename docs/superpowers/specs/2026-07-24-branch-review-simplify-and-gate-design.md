@@ -93,7 +93,7 @@ no test/lint command detected:
 Append to the existing `## Auto-Fix Summary` section in `Findings.md`:
 
 - Gate result: `baseline <green|red> → final <green|red>` + test/lint command used (or "no gate available").
-- Simplify status: `applied (N edits)` | `skipped: not available` | `skipped: --no-simplify` | `skipped: baseline red` | `discarded: broke tests`.
+- Simplify status: `applied (N edits)` | `skipped: not available` | `skipped: --no-simplify` | `skipped: baseline red` | `discarded: broke tests` | `retained: innocent (gate red from functional fixes)` | `applied ungated (no gate available)`.
 
 ### D. Soft-Dependency Convention in STYLEGUIDE
 

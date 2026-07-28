@@ -1,7 +1,7 @@
 ---
 name: branch-review
 license: MIT
-description: 'Multi-agent code review EXCLUSIVELY of the diff between the current branch and a base branch (default main, fallback master/develop) — not a whole-repo audit, only diff-touched areas. Spawns parallel subagents for code quality, architecture, security (OWASP/CWE/CVSS), SEO, privacy/legal, UI/UX (WCAG), and performance, consolidated into a Findings.md with P0–P4 prioritization. Optional `--apply-fixes` applies clear fixes and escalates design decisions. Use for "review this branch", "PR review", "diff review", "branch review", "review my PR", "code review for branch", "review what changed", "review and fix", "fix PR issues", or German "review meinen branch", "review die änderungen", "schau dir den branch an", "PR-Review" — whenever a PR link, branch range, or diff is posted, even without the word "review" if context is clear. DO NOT trigger for a whole-project audit without branch context — use full-project-review.'
+description: 'Multi-agent code review EXCLUSIVELY of the diff between the current branch and a base branch (default main, fallback master/develop) — not a whole-repo audit, only diff-touched areas. Spawns parallel subagents for code quality, architecture, security (OWASP/CWE/CVSS), SEO, privacy/legal, UI/UX (WCAG), and performance, consolidated into a Findings.md with P0–P4 prioritization. Optional `--apply-fixes` applies clear fixes, runs a `/simplify` pass behind a test/lint gate (`--no-simplify` opts out), and escalates design decisions. Use for "review this branch", "PR review", "diff review", "branch review", "review my PR", "code review for branch", "review what changed", "review and fix", "fix PR issues", or German "review meinen branch", "review die änderungen", "schau dir den branch an", "PR-Review" — whenever a PR link, branch range, or diff is posted, even without the word "review" if context is clear. DO NOT trigger for a whole-project audit without branch context — use full-project-review.'
 user-invocable: true
 argument-hint: "[base-branch] [--apply-fixes] [--no-simplify]"
 ---
@@ -227,15 +227,7 @@ Flags: `--no-simplify` disables the Simplify Pass (see below). Without `--apply-
 
 ### Fix-Phase Execution Order
 
-1. Preconditions above (incl. test/lint command detection).
-2. **Baseline gate** — run the detected test + lint command once; record green/red as the baseline (see Test/Lint Gate).
-3. Fix classification (below).
-4. Confident-fix workflow (below) — commit per fix.
-5. Design-decision escalation (below) — user picks, implement, commit. Push is deferred to step 8.
-6. **Simplify pass** (below) — edits land uncommitted.
-7. **Final gate** (see Test/Lint Gate) — commit the simplify edits on green, `git restore` them on red.
-8. **Push** — only on a green final gate or explicit user approval; never to a default branch.
-9. Extend the **Auto-Fix Summary** in `Findings.md`.
+F1. Preconditions above (incl. test/lint command detection). F2. **Baseline gate** — run the detected test + lint command once; record green/red as the baseline (see Test/Lint Gate). F3. Fix classification (below). F4. Confident-fix workflow (below) — commit per fix. F5. Design-decision escalation (below) — user picks, implement, commit. Push is deferred to step F8. F6. **Simplify pass** (below) — edits land uncommitted. F7. **Final gate** — apply the Test/Lint Gate decision matrix below; do not act on this summary line alone. F8. **Push** — only on a green final gate or explicit user approval; never to a default branch. F9. Extend the **Auto-Fix Summary** in `Findings.md`.
 
 ### Fix Classification
 
@@ -256,7 +248,6 @@ Per confident fix:
 1. **Verify** — read `git show <branch>:<file>`, make sure the location and the problem exist as the finding claims. On mismatch: return the finding to `Findings.md` as hypothesis and do not patch.
 2. **Minimal patch** — fix only the found location, no surrounding refactoring, no reformatting.
 3. **Commit** — `git add <file> && git commit -m "fix(<area>): <one-line>"` with a reference to the finding ID (e.g. `[F-014]`).
-4. **Check idempotence** — if the fix needs a test/lint: run it. If not possible: note in the commit message.
 
 Related confident fixes can be combined in one commit when they logically belong together (e.g. the same stale doc in three places).
 
@@ -281,24 +272,24 @@ Recommendation: <A | B | C> — <one-sentence justification>
 
 At the end: "Which options should I implement? (e.g. 1.B, 2.A, 3.C)"
 
-After the user's reply: implement the options, one commit per affected concern. Push follows the gated Push Strategy (step 8) — after the Simplify Pass and final gate, never immediately here.
+After the user's reply: implement the options, one commit per affected concern. Push follows the gated Push Strategy (step F8) — after the Simplify Pass and final gate, never immediately here.
 
 ### Simplify Pass (`/simplify`)
 
-Runs as step 6, after all functional fixes are committed, unless `$ARGUMENTS` contains `--no-simplify`.
+Runs as step F6, after all functional fixes are committed, unless `$ARGUMENTS` contains `--no-simplify`.
 
-- **Skip if the baseline gate (step 2) was red.** Do not simplify on an already-broken baseline — record `simplify skipped: baseline red` and proceed with no simplify edits. This also avoids leaving simplify edits with no disposition.
+- **Skip if the baseline gate (step F2) was red.** Do not simplify on an already-broken baseline — record `simplify skipped: baseline red` and proceed with no simplify edits. This also avoids leaving simplify edits with no disposition.
 - **Feature-detect** whether the `/simplify` built-in is available in this environment (cf. STYLEGUIDE §8). If absent → skip, record `simplify skipped: not available` in the Auto-Fix Summary, continue to the final gate. No hard failure.
 - If disabled via `--no-simplify` → skip, record `simplify skipped: --no-simplify`.
 - Otherwise invoke `/simplify`, passing the changed-files scope as its target. `/simplify` reviews the changed code for reuse, simplification, efficiency, and altitude cleanups and applies fixes **directly to the working tree** — it does not commit. It self-skips any fix that would change intended behavior.
-- **Do not commit yet.** The final gate decides whether the simplify edits are kept (commit) or discarded (`git restore`).
+- **Do not commit yet.** The final gate decides whether the simplify edits are kept (commit) or discarded (stashed and dropped).
 
 ### Test/Lint Gate
 
 Two checkpoints with baseline-based blame attribution. `/simplify` must be behavior-preserving, so its edits are proven by the gate before they are committed.
 
-- **Baseline gate** (step 2): run the detected test + lint command before any mutation; record green or red.
-- **Final gate** (step 7): re-run against the working tree (simplify edits applied, still uncommitted).
+- **Baseline gate** (step F2): run the detected test + lint command before any mutation; record green or red.
+- **Final gate** (step F7): re-run against the working tree (simplify edits applied, still uncommitted).
 
 Decision matrix:
 
@@ -308,9 +299,11 @@ baseline green + final green:
         "refactor(simplify): reuse/simplification pass [automated]"
 baseline green + final red:
     if simplify ran (edits uncommitted):
-        git restore the simplify edits → re-run gate
-            green now  → simplify was the culprit; discarded; log "simplify discarded: broke tests"; done
-            still red  → functional fixes are the culprit → ESCALATE to user, do not discard their commits
+        git stash push -u -m "simplify-pass" → re-run gate
+            green now  → simplify was the culprit; drop the stash;
+                         log "simplify discarded: broke tests"; done
+            still red  → functional fixes are the culprit; git stash pop to restore the
+                         innocent simplify edits → ESCALATE to user, do not discard their commits
     if simplify did not run:
         functional fixes are the culprit → ESCALATE to user
 baseline already red:
@@ -324,7 +317,7 @@ no test/lint command detected:
 
 ### Push Strategy
 
-- Push runs as step 8, **only** when the final gate is green OR the user explicitly approves pushing with known failures.
+- Push runs as step F8, **only** when the final gate is green OR the user explicitly approves pushing with known failures, OR no gate was available (log `pushed ungated` in the Auto-Fix Summary).
 - **If the branch is part of an open PR:** `git push` to the PR branch.
 - **No PR present:** branch exists only locally / on the remote → `git push -u origin <branch>`.
 - **Never** push to `main`/`master`/`develop`.
@@ -338,7 +331,7 @@ After the auto-fix phase, append a new section `## Auto-Fix Summary` to `Finding
 - Out-of-scope findings: N (with finding IDs and reason)
 - Discarded hypotheses (not reproducible on branch): N (with finding IDs)
 - Gate result: `baseline <green|red> → final <green|red>` + the test/lint command used (or `no gate available`)
-- Simplify status: `applied (N edits, <sha>)` | `skipped: not available` | `skipped: --no-simplify` | `skipped: baseline red` | `discarded: broke tests`
+- Simplify status: `applied (N edits, <sha>)` | `skipped: not available` | `skipped: --no-simplify` | `skipped: baseline red` | `discarded: broke tests` | `retained: innocent (gate red from functional fixes)` | `applied ungated (no gate available)`
 
 This keeps it traceable what the skill changed in the code — and what the user still needs to decide.
 
