@@ -243,12 +243,14 @@ Plugins can ship a `hooks.json` that loads automatically. This skill deliberatel
 1. The repository is public. A plugin that silently begins writing every user's prompts to disk after installation is a privacy problem regardless of the data staying local. It must be a deliberate choice, not a side effect of `npx skills add`.
 2. The plugin cache path is version-pinned. A hook pointing into it breaks silently on the next plugin update, and `${CLAUDE_PLUGIN_ROOT}` only resolves for plugin-provided hooks, not for an entry in the user's global `settings.json`.
 
-`--install-hook` therefore copies `ingest.mjs` to `~/.claude/scripts/insights-ingest.mjs` (a stable path), shows the intended `settings.json` diff, and patches only after explicit confirmation:
+`--install-hook` therefore copies the ingest script **together with its `lib/` directory** to `~/.claude/scripts/insights-history/` (a stable path), shows both the file list and the intended `settings.json` diff, and performs either write only after a single explicit confirmation.
+
+Copying `ingest.mjs` on its own does not work and must never be documented that way. It imports `./lib/store.mjs` and `./lib/transcript.mjs` by relative path, so a lone-file install fails at module load with `ERR_MODULE_NOT_FOUND` — before the script's own error handling is even reached — printing a Node stack trace at the end of every session while archiving nothing.
 
 ```json
 {
   "hooks": {
-    "SessionEnd": [{ "hooks": [{ "type": "command", "command": "node ~/.claude/scripts/insights-ingest.mjs" }] }]
+    "SessionEnd": [{ "hooks": [{ "type": "command", "command": "node ~/.claude/scripts/insights-history/ingest.mjs" }] }]
   }
 }
 ```
