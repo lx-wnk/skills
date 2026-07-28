@@ -2,12 +2,12 @@
 name: reproduce-first-debug
 license: MIT
 description: >-
-  Debug a defect under a hard reproduce-first gate — no hypothesis, no code reading for causes, and no fix proposal before a reproduction artifact has been shown to fail. The reproduction is then promoted to a permanent regression test, committed RED before the fix, and the outcome is logged to a bug ledger. Uses local fixtures, never real ticket or production data. Use this skill whenever a defect is reported without a confirmed root cause, or the user says "debug this", "fix this bug", "why is X broken", "this is failing", "the test is red", "investigate this error", "find the root cause", "debugge das", "warum geht das nicht", "das funktioniert nicht", "finde den Fehler", "such den Bug", "der Test ist rot", "Fehler analysieren". Also trigger when a stack trace, failing test output, or error log is pasted without a question. DO NOT trigger for a known cause where only the fix is wanted, for adding tests to working code (that is ordinary test work), or for reviewing a diff — use `branch-review` for that.
+  Debug a defect under a hard reproduce-first gate — no hypothesis, code reading, or fix before a reproduction artifact fails. The reproduction is promoted to a permanent regression test, committed RED before the fix, then logged to a bug ledger. Uses local fixtures, never real ticket or production data. Use this skill when a defect lacks a confirmed root cause, or the user says "debug this", "fix this bug", "why is X broken", "this is failing", "the test is red", "investigate this error", "find the root cause", "debugge das", "warum geht das nicht", "das funktioniert nicht", "finde den Fehler", "such den Bug", "der Test ist rot", "Fehler analysieren". Also trigger when a stack trace, failing test output, or error log is pasted without a question. DO NOT trigger for a known cause where only the fix is wanted, for adding tests to working code, or for reviewing a diff — use `branch-review` for that. NOT for general debugging without the RED-repro-and-ledger gate — see `superpowers:systematic-debugging`.
 
 
 user-invocable: true
 argument-hint: "[bug description, ticket key, or pasted error]"
-allowed-tools: "Bash(git *) Bash(gh *) Bash(npm *) Bash(pnpm *) Bash(make *) Bash(curl *) Bash(docker *) Bash(php *) Bash(python3 *) Read Write Edit Grep Glob"
+allowed-tools: "Bash(git *) Bash(npm *) Bash(pnpm *) Bash(make *) Bash(curl *) Bash(docker *) Bash(php *) Bash(python3 *) Read Write Edit Grep Glob"
 ---
 
 # Reproduce-First Debugging
@@ -42,13 +42,22 @@ flowchart TD
     A[1. Collect trigger data] -->|complete| B[2. Build reproduction artifact]
     A -->|input missing| A1[Ask for the specific input. STOP.]
     B -->|artifact fails reproducibly| C[3. Bisect the layer boundary]
-    B -->|cannot reproduce| A1
+    B -->|cannot reproduce, input missing| A1
+    B -->|cannot reproduce, inputs present, attempts < 3| B
+    B -->|cannot reproduce after 3 attempts, inputs present| B1[Not reproducible locally. Record attempted vectors, hand back: instrumentation or prod trace. STOP.]
     C --> D[4. Promote to regression test, commit RED]
     D --> E[5. Minimal fix, show red to green]
     E --> F[6. Log to bug ledger]
 ```
 
 Strict order. No step may be skipped, reordered, or run speculatively in parallel.
+
+### Preconditions
+
+Checked once, before step 1 — the reproduction artifact built in step 2 makes the tree dirty by design, so these cannot be deferred to the commit in step 4:
+
+- Working tree must be clean (`git status --porcelain` empty). Otherwise abort with the note "Please commit or stash first."
+- The current branch is not `main`/`master`/`develop` (no commit on the default branch).
 
 ### 1. No hypothesis without data
 
@@ -65,7 +74,7 @@ Anything missing: ask for it specifically and stop. Do not guess, and do not sta
 The cheapest form that genuinely hits the defect:
 
 - Unit or jsdom test
-- `curl` sequence
+- `curl` sequence (against local/dev hosts only — never a production endpoint)
 - SQL against local fixtures
 - Dev-only mock
 - DOM-faithful HTML mockup
@@ -74,7 +83,9 @@ Use local fixtures. Never real ticket or production data.
 
 **Gate: continue only once the artifact reproducibly FAILS and the failing output is pasted.** A reproduction that cannot be made to fail on demand is not a reproduction.
 
-If the defect cannot be reproduced: stop and state precisely which input is needed. Do not propose fixes.
+If the defect cannot be reproduced and an input is missing: stop and state precisely which input is needed. Do not propose fixes.
+
+If all requested inputs are present and the defect still won't reproduce after **3 attempts**: stop retrying. Declare "not reproducible locally", list every vector attempted (exact commands, fixtures, branch, environment), and hand back to the user with concrete options — add instrumentation/logging at the suspected boundary, or request a production trace for the specific window. This is a valid terminal state, not a failure to resolve before continuing; do not loop on asking for more input once inputs are confirmed present.
 
 ### 3. Bisect the layer boundary
 
@@ -85,6 +96,12 @@ For each layer boundary, prove which side is broken:
 Declare nothing healthy without evidence. `VERIFIED` requires pasted output; anything else is `HYPOTHESIS` and must name the cheapest command that would settle it.
 
 ### 4. Reproduction becomes a regression test
+
+**Commit rules** (the entry Preconditions above already established a clean tree and a non-default branch):
+
+- Stage only the reproduction test. Unrelated files that appeared meanwhile are not swept in.
+- Commit message follows the repo's conventional style (e.g. `test(auth): add RED repro for ABC-1234`).
+- Never push. The user pushes when ready.
 
 Promote the artifact to a permanent test in the suite:
 
@@ -101,13 +118,18 @@ A reproduction deleted after the fix guarantees the defect can return unnoticed.
 
 ### 6. Log it
 
-Append one row to `docs/bug-ledger.md`, creating the file with this header if absent:
+Append one row to `docs/bug-ledger.md`, creating the file with this header if absent — write only the header shown, no rows:
 
 ```markdown
 # Bug Ledger
 
 | Date | Symptom | Root cause | Layer | Guarding test |
-| --- | --- | --- | --- | --- |
+| ---- | ------- | ---------- | ----- | ------------- |
+```
+
+Example row, illustrating the schema only — this is a sample and **must not** be written into the created file:
+
+```markdown
 | 2026-07-28 | Promo ignored on bundles | Bundle line items skip the discount collector | Backend service | `PromoBundleTest::testBundleGetsDiscount` |
 ```
 
