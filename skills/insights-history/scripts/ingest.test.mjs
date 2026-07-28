@@ -71,6 +71,34 @@ test("archive is written before the metadata marker", async () => {
   assert.ok(archive.mtimeMs <= meta.mtimeMs, "metadata marker must not predate the archive it attests to");
 });
 
+test("a failed archive write leaves no metadata marker behind", async (t) => {
+  if (process.getuid?.() === 0) {
+    t.skip("running as root — filesystem permissions are not enforced");
+    return;
+  }
+  const { data, transcript } = await scenario();
+  const { mkdir, chmod, readdir } = await import("node:fs/promises");
+
+  // Archive directory exists but is not writable, so writeBufferAtomic throws.
+  await mkdir(join(data, "archive"), { recursive: true });
+  await chmod(join(data, "archive"), 0o555);
+  try {
+    const { stdout, stderr } = await ingest(data, payload(transcript));
+    assert.equal(stdout, "");
+    assert.equal(stderr, "");
+    // ingestOne creates session-meta/ unconditionally (mkdir before either
+    // write), so the directory itself always exists — readdir on it never
+    // rejects. The property under test is that the marker *file* was never
+    // written, not that the directory is missing.
+    const entries = await readdir(join(data, "session-meta")).catch(() => []);
+    assert.ok(!entries.includes("s1.json"), "metadata marker must not exist after a failed archive write");
+    const log = await readFile(join(data, "ingest.log"), "utf8");
+    assert.ok(log.length > 0, "archive write failure was not logged");
+  } finally {
+    await chmod(join(data, "archive"), 0o755);
+  }
+});
+
 test("hook mode skips subagent transcripts", async () => {
   const { dir, data } = await scenario();
   const sub = join(dir, "projects", "-repo", "subagents", "agent-x.jsonl");
