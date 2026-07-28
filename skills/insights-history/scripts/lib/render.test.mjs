@@ -120,3 +120,26 @@ test("renderReport escapes project paths", () => {
   assert.ok(!html.includes("<img onerror=x>"));
   assert.ok(html.includes("&lt;img onerror=x&gt;"));
 });
+
+test("renderReport discloses the ad-hoc vocabulary share", () => {
+  const html = renderReport({
+    buckets: [{ ...BUCKETS[0], friction: { buggy_code: 8, agent_stall: 2 }, frictionUnknown: { agent_stall: 2 } }],
+    totals: TOTALS,
+    range: { start: "2026-06-23", end: "2026-07-05" },
+    granularity: "week",
+    narrative: { summary: "", delta: "" },
+  });
+  assert.ok(html.includes("Ad-hoc vocabulary"));
+  assert.ok(html.includes("2 of 10 (20%)"));
+});
+
+test("renderReport shows a dash when every friction key is defined", () => {
+  const html = renderReport({
+    buckets: [{ ...BUCKETS[0], friction: { buggy_code: 3 }, frictionUnknown: {} }],
+    totals: TOTALS,
+    range: { start: "2026-06-23", end: "2026-07-05" },
+    granularity: "week",
+    narrative: { summary: "", delta: "" },
+  });
+  assert.ok(!html.includes("(0%)"));
+});

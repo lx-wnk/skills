@@ -28,6 +28,7 @@ th { color:var(--muted); font-weight:500; }
 .wrap { overflow-x:auto; }
 .spark { color:var(--accent); vertical-align:middle; }
 .delta-up { color:#16a34a; } .delta-down { color:#dc2626; }
+.note { color:var(--muted); font-size:13px; max-width:70ch; }
 `;
 
 function topEntries(record, limit = 3) {
@@ -73,10 +74,13 @@ function qualityTable(buckets) {
       const projects = topEntries(b.projects)
         .map(([k, v]) => `${escapeHtml(k)} ${v}`)
         .join(", ");
-      return `<tr><td>${escapeHtml(b.key)}</td><td>${outcomes || "—"}</td><td>${friction || "—"}</td><td>${projects || "—"}</td></tr>`;
+      const total = Object.values(b.friction ?? {}).reduce((sum, n) => sum + n, 0);
+      const unknown = Object.values(b.frictionUnknown ?? {}).reduce((sum, n) => sum + n, 0);
+      const share = unknown === 0 ? "—" : `${unknown} of ${total} (${Math.round((unknown / total) * 100)}%)`;
+      return `<tr><td>${escapeHtml(b.key)}</td><td>${outcomes || "—"}</td><td>${friction || "—"}</td><td>${escapeHtml(share)}</td><td>${projects || "—"}</td></tr>`;
     })
     .join("");
-  return `<div class="wrap"><table><thead><tr><th>Bucket</th><th>Outcomes</th><th>Friction</th><th>Projects</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  return `<div class="wrap"><table><thead><tr><th>Bucket</th><th>Outcomes</th><th>Friction</th><th>Ad-hoc vocabulary</th><th>Projects</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 function comparisonTable(comparison) {
@@ -106,6 +110,7 @@ export function renderReport({ buckets, totals, range, granularity, narrative, c
 <h2>Absolute</h2>${absoluteTable(buckets)}
 <h2>Normalised</h2>${normalisedTable(buckets)}
 <h2>Quality</h2>${qualityTable(buckets)}
+<p class="note">Friction categories come from an automated per-session assessment that is not schema-checked, so some categories are invented ad hoc. The <em>ad-hoc vocabulary</em> column shows how many of a bucket's friction events use categories outside the defined set — treat those counts as weaker evidence.</p>
 ${comparisonTable(comparison)}
 <h2>Summary</h2><p>${escapeHtml(narrative?.summary ?? "")}</p>
 <h2>Change</h2><p>${escapeHtml(narrative?.delta ?? "")}</p>
