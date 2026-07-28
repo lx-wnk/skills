@@ -73,11 +73,11 @@ items:
 | --- | --- |
 | `goal` | A state, never an activity. "no `fetch(` remains in `src/`" not "remove fetch calls". |
 | `verify` | Must run in this project. Execute it once before the loop starts; a command that errors on invocation is a broken contract, not a red goal. |
-| `progress` | Optional, numeric, monotone, lower is better. Omit rather than invent one — the controller falls back to output hashing. |
+| `progress` | Numeric, monotone, lower is better. Declare one whenever a real number exists (failing-test count, lint-error count) — it is what makes `stuck` detection work. Omit only if no honest number exists, and expect weaker detection: the output-hash fallback flags "output changed at all", not progress. |
 | `scope-allow` | Path globs the worker may edit. Keep it as narrow as the task allows; it is the blast radius. |
 | `scope-deny` | Explicit exclusions inside allowed paths, plus anything the auditor adds after detecting gaming. Grows during a run. |
 | `stop` | Budgets, not goals. Defaults: Goal-Mode `8` / `2`, Plan-Mode `3` per item / `40` global. |
-| `escalate` | Conditions that must reach a human rather than being solved: schema changes, dependency bumps, credential or infra edits. |
+| `escalate` | Advisory only — read by the human reviewing the contract, never by the controller. Conditions that should reach a person rather than be solved: schema changes, dependency bumps, credential or infra edits. No subcommand consumes this field and no stop reason corresponds to it; a run does not halt on its own when one of these conditions occurs. Treat it as documentation of intent, not as an enforced gate. |
 | `items[].state` | Only ever `manual` at write time. `done` / `blocked` are runtime states owned by the controller, not the contract file. |
 
 Lock files, CI configuration, and dependency manifests belong in `scope-deny` unless the goal is explicitly about them.

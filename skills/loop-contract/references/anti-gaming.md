@@ -49,7 +49,8 @@ The auditor gets read-only work — it inspects, it never edits.
 ## Handling the verdict
 
 ```bash
-loop-state.sh audit --state <state> --verdict clean|gamed [--item <id>]
+loop-state.sh audit --state <state> --verdict clean|gamed              # Goal-Mode
+loop-state.sh audit --state <state> --verdict clean|gamed --item <id>  # Plan-Mode, per item — --item is required
 ```
 
 **`CLEAN`** — Goal-Mode stops with `goal-met`; Plan-Mode marks the item `done` and moves on.
@@ -69,3 +70,11 @@ Two `GAMED` verdicts in a row stop the run (`audit-blocked` in Goal-Mode, item `
 ## Final audit in Plan-Mode
 
 After all items are resolved, run `global-verify` and dispatch one more auditor over the **whole** run diff. Per-item audits see one item's changes; only the final pass can catch an item that quietly broke an earlier one.
+
+Report its verdict with `--global-audit`, which records a run-level result without `--item`:
+
+```bash
+loop-state.sh audit --state <state> --verdict clean|gamed --global-audit
+```
+
+This is the only audit call accepted after `STOP` — the run is already stopped when the final audit happens. (`--global-audit` is not `init`'s Plan-Mode `--global` budget cap; they are separate flags.)

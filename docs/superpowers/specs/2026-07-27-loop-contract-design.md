@@ -138,7 +138,7 @@ items:
     goal: "…"
 ```
 
-When `progress` is absent, the controller falls back to hashing the verify output: identical output twice means the worker is circling — detectable deterministically, without a model.
+When `progress` is absent, the controller falls back to hashing the verify output. That fallback is weaker than it looks and is **not** equivalent to metric-based detection: any verify output carrying timings, PIDs, or absolute paths hashes differently on every run, so the fallback detects "the output changed at all", not "the worker made progress" — and a circling run then burns its full budget without ever tripping `stuck`. Declare a `progress` command whenever a real number exists (failing-test count, lint-error count); reserve the fallback for verify commands with genuinely stable output.
 
 ## Controller
 
@@ -154,7 +154,10 @@ Goal-Mode:
     run verify → code, out
     code == 0                              → AUDIT
     metric = run(progress) || hash(out)
-    metric not better → nprog++ else nprog=0
+    metric better than BEST SO FAR → best=metric, nprog=0 else nprog++
+      ; compared against the best, not the previous round — otherwise an
+      ; oscillating worker (5,9,8,9,8,…) resets the counter every other
+      ; round and never trips stuck
     nprog >= no-progress-rounds            → STOP stuck
     last = tail(out)
 

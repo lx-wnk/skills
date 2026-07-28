@@ -20,15 +20,16 @@ Turn a prompt — or a whole concept document — into an explicit loop contract
 
 ## Control discipline (top-level rule)
 
-**The controller script decides, not you.** Every continue/stop decision comes from `${CLAUDE_SKILL_DIR}/scripts/loop-state.sh`. You spawn workers, run verify commands, and report outcomes to the script. You never conclude "this looks done" or "one more attempt should fix it" — you execute the directive the script prints:
+**The controller script decides, not you.** Every continue/stop decision comes from `${CLAUDE_SKILL_DIR}/scripts/loop-state.sh`. You spawn workers, run verify commands, and report outcomes to the script. You never conclude "this looks done" or "one more attempt should fix it" — you execute the directive the script prints. Most subcommands print exactly one directive line; `next` in Plan-Mode is the exception — it may print zero or more informational `ITEM` lines (items auto-blocked by a spent per-item budget) before its terminal `SPAWN` or `STOP` line. Keep reading output until a `SPAWN`, `STOP`, or `CONTINUE` line appears.
 
-| Directive        | What you do                                                |
-| ---------------- | ---------------------------------------------------------- |
-| `SPAWN …`        | dispatch one fresh worker subagent for that iteration/item |
-| `AUDIT …`        | dispatch the anti-gaming auditor, then report its verdict  |
-| `CONTINUE …`     | call `next` again                                          |
-| `STOP reason=…`  | stop immediately and write the report                      |
-| `SCOPE escape …` | stop the run, report the offending file, change nothing    |
+| Directive | What you do |
+| --- | --- |
+| `SPAWN …` | dispatch one fresh worker subagent for that iteration/item |
+| `AUDIT …` | dispatch the anti-gaming auditor, then report its verdict |
+| `ITEM …` | informational only — an item was auto-blocked, marked, or resolved; no action required, keep reading |
+| `CONTINUE …` | call `next` again |
+| `STOP reason=…` | stop immediately and write the report; a repeated `STOP` from `record`/`audit` on an already-stopped run is terminal, not a new event |
+| `SCOPE escape …` | Goal-Mode: the whole run stops (`STOP reason=scope-escape`). Plan-Mode: the current item is blocked and the run continues (`ITEM item=N state=blocked reason=scope-escape`) |
 
 This is a standing rule for the entire run, not a one-time step. The reason is structural: a model asked to judge its own progress will keep retrying a failed action, which is the runaway-loop failure mode this skill exists to prevent.
 
@@ -129,7 +130,9 @@ Write to `outputs/loop-contracts/<slug>.md` (`mkdir -p` first). Full schema and 
 
 **Print the complete contract before spawning the first worker.** It must be in the transcript so the run is interruptible.
 
-Then initialise the controller:
+**If `--dry-run` was passed, stop here.** Print the contract and return — do not initialise the controller.
+
+Otherwise, initialise the controller:
 
 ```bash
 # Goal-Mode
@@ -140,6 +143,8 @@ ${CLAUDE_SKILL_DIR}/scripts/loop-state.sh init --state outputs/loop-contracts/<s
 ${CLAUDE_SKILL_DIR}/scripts/loop-state.sh init --state outputs/loop-contracts/<slug>.state \
   --mode plan --per-item 3 --global 40 --items 1,2,3,4
 ```
+
+`--global` above sets the Plan-Mode run budget on `init`; it is a different flag from `--global-audit`, which the final run-level audit in Phase 3 uses.
 
 Mark unverifiable items immediately:
 
@@ -153,6 +158,8 @@ loop-state.sh mark --state <state> --item 3 --state-value manual
 
 Preconditions, checked once: not on `main`/`master`/`develop` (abort with a hint), and the verify command executes.
 
+**Resuming an interrupted run:** if `outputs/loop-contracts/<slug>.state` already exists with `status=running`, call `next` on it directly — do not re-run `init`. `init` refuses an existing running state unless `--force` is passed, precisely because re-initialising would silently reset the global budget to zero; `--force` is only for deliberately discarding a run and starting over.
+
 Repeat until the script prints `STOP`:
 
 ```bash
@@ -164,15 +171,29 @@ loop-state.sh next --state <state>
 **After the worker returns**, in this order:
 
 ```bash
-loop-state.sh scope-check --allow "src/**,tests/**"       # SCOPE escape → stop the run
-<verify command> > /tmp/verify-out.txt 2>&1; echo $?      # capture exit code and output
-loop-state.sh record --state <state> --exit <code> --output /tmp/verify-out.txt \
-  [--metric <n>] [--item <id>]
+# Goal-Mode: --allow is the contract's global scope-allow.
+loop-state.sh scope-check --state <state> --allow "src/**,tests/**" --deny "src/vendor/**"
+
+# Plan-Mode: --allow is the CURRENT ITEM's scope-allow, not a global fence.
+# --item is required so an escape can be recorded against that item.
+loop-state.sh scope-check --state <state> --allow "src/user/**,tests/user/**" --deny "src/vendor/**" --item <id>
 ```
 
-Pass `--metric` when the contract declares a `progress` command: run it and pass its numeric result (lower is better). Without a metric the script falls back to hashing the verify output — identical output twice means the worker is circling, and that is detected without a model.
+Always pass `--deny` with the contract's current `scope-deny`. Appending to `scope-deny` after a GAMED verdict (Phase 3) is load-bearing only if every `scope-check` call actually receives it. The check excludes files under the state file's own directory (`outputs/loop-contracts/`) — the controller's state and captured verify output never count as an out-of-scope change, so a target repo that does not gitignore that directory still runs cleanly.
 
-Then follow whatever `record` printed. Never run a worker that the script did not ask for.
+`scope-check` exits non-zero on escape. **Goal-Mode:** an escape stops the whole run (`STOP reason=scope-escape`). **Plan-Mode:** an escape blocks the current item (`ITEM item=<id> state=blocked reason=scope-escape`) and the run continues with the next item.
+
+Once `scope-check` reports `SCOPE ok`, run verify and capture its output. Brace-group the command so the redirect covers a compound verify (`A && B`) in full, and write beside the state file rather than to a shared global path — a fixed path like `/tmp/verify-out.txt` would be overwritten by every concurrent run:
+
+```bash
+{ <verify command>; } > outputs/loop-contracts/<slug>.verify-out.txt 2>&1; echo $?
+loop-state.sh record --state <state> --exit <code> --output outputs/loop-contracts/<slug>.verify-out.txt \
+  --metric <n> --item <id>   # --item only in Plan-Mode
+```
+
+Pass `--metric` whenever the contract declares a `progress` command — treat it as the norm, not an optional extra. Without it, the script falls back to hashing the verify output, and that fallback is **not** equivalent to real progress detection: any output containing timings, PIDs, or absolute paths hashes differently on every run, so it detects "the output changed at all", not "the worker made progress" — a stuck run can burn its whole budget undetected. Reserve the fallback for verify commands with genuinely stable output.
+
+Then follow whatever `record` printed — including a repeated `STOP` if the run had already stopped; treat that as terminal, not a new decision. Never run a worker that the script did not ask for.
 
 ## Phase 3 — Anti-gaming audit
 
@@ -183,12 +204,19 @@ Auditor prompt and the circumvention catalogue: [references/anti-gaming.md](refe
 Report the verdict back:
 
 ```bash
-loop-state.sh audit --state <state> --verdict clean|gamed [--item <id>]
+loop-state.sh audit --state <state> --verdict clean|gamed              # Goal-Mode
+loop-state.sh audit --state <state> --verdict clean|gamed --item <id>  # Plan-Mode, per item — --item is required
 ```
 
 On `gamed`, append the specific trick to `scope-deny` in the contract file before the next worker spawns. The next worker starts fresh and would otherwise repeat it, having no memory of the previous round.
 
-In Plan-Mode, after `STOP reason=all-items-resolved`, run the contract's `global-verify` and dispatch one final auditor over the whole run diff. Per-item audits each see one item; only the final pass catches an item that quietly broke an earlier one. A failing `global-verify` does not reopen the loop — it is reported as needing a human.
+In Plan-Mode, after `STOP reason=all-items-resolved`, run the contract's `global-verify` and report the final run-level audit with `--global-audit` (a different flag from `init`'s Plan-Mode `--global` budget cap):
+
+```bash
+loop-state.sh audit --state <state> --verdict clean|gamed --global-audit
+```
+
+This is the one audit call that runs after `STOP` — the run has already stopped, and `--global-audit` is what makes that legal. Per-item audits each see one item; only the final pass catches an item that quietly broke an earlier one. A failing `global-verify` does not reopen the loop — it is reported as needing a human.
 
 ## Phase 4 — Report
 
@@ -202,14 +230,14 @@ Cover: stop reason, iterations or items consumed against budget, `done` / `block
 
 Stop reasons and their meaning:
 
-| Reason               | Meaning                                                           |
-| -------------------- | ----------------------------------------------------------------- |
-| `goal-met`           | verify green, audit clean                                         |
-| `all-items-resolved` | Plan-Mode: every item is done, blocked, or manual                 |
-| `budget`             | iteration or global cap reached                                   |
-| `stuck`              | no progress for `no-progress-rounds` consecutive rounds           |
-| `audit-blocked`      | the verifier was gamed twice                                      |
-| scope escape         | a file outside `scope-allow` changed; run stopped, nothing undone |
+| Reason | Meaning |
+| --- | --- |
+| `goal-met` | verify green, audit clean |
+| `all-items-resolved` | Plan-Mode: every item is done, blocked, or manual |
+| `budget` | iteration or global cap reached |
+| `stuck` | no progress for `no-progress-rounds` consecutive rounds |
+| `audit-blocked` | the verifier was gamed twice |
+| `scope-escape` | **Goal-Mode only** — a file outside `scope-allow` or inside `scope-deny` changed; the whole run stops, nothing undone. In Plan-Mode a scope escape does not stop the run: it blocks the current item instead (see `ITEM … reason=scope-escape` in the directive table above) and the run continues. |
 
 ## Rules
 
