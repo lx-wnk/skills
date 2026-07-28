@@ -48,7 +48,7 @@ test("extractMeta counts turns, tools and tokens", async () => {
   assert.equal(meta.session_id, "s1");
   assert.equal(meta.transcript_mtime, 1234);
   assert.equal(meta.user_message_count, 2);
-  assert.equal(meta.assistant_message_count, 3);
+  assert.equal(meta.assistant_message_count, 2);
   assert.deepEqual(meta.tool_counts, { Bash: 1, Edit: 1 });
   assert.equal(meta.input_tokens, 15);
   assert.equal(meta.output_tokens, 150);
@@ -65,7 +65,13 @@ test("extractMeta derives duration and response times", async () => {
   assert.equal(meta.start_time, "2026-07-01T09:00:00.000Z");
   assert.equal(meta.duration_minutes, 5);
   assert.deepEqual(meta.user_message_timestamps, ["2026-07-01T09:00:00.000Z", "2026-07-01T09:05:00.000Z"]);
-  assert.deepEqual(meta.message_hours, [9, 9]);
+  // Local hours, deliberately: the built-in stores local, verified against a
+  // real cached session where a 07:34Z timestamp is recorded as hour 9 (CEST).
+  // Deriving the expectation keeps the test correct in any timezone.
+  assert.deepEqual(meta.message_hours, [
+    new Date("2026-07-01T09:00:00.000Z").getHours(),
+    new Date("2026-07-01T09:05:00.000Z").getHours(),
+  ]);
 });
 
 test("extractMeta records tool errors by category", async () => {

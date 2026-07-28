@@ -110,7 +110,7 @@ export function extractMeta(lines, { sessionId, projectPath, transcriptMtime }) 
       if (!meta.first_prompt) meta.first_prompt = text.slice(0, 200);
       if (at) {
         meta.user_message_timestamps.push(line.timestamp);
-        meta.message_hours.push(at.getUTCHours());
+        meta.message_hours.push(at.getHours());
         if (lastAssistantAt) {
           meta.user_response_times.push((at - lastAssistantAt) / 1000);
           lastAssistantAt = null;
@@ -131,12 +131,9 @@ export function extractMeta(lines, { sessionId, projectPath, transcriptMtime }) 
       continue;
     }
 
-    if (line?.type !== "assistant") continue;
+    if (line?.type !== "assistant" || line.isSidechain) continue;
 
     meta.assistant_message_count += 1;
-
-    if (line.isSidechain) continue;
-
     if (at) lastAssistantAt = at;
 
     const usage = line.message?.usage;
