@@ -4,6 +4,7 @@
   "scripts": {
     "prettier": "prettier --check .",
     "prettier:fix": "prettier --write .",
+    "test": "node --test",
     "sync": "node scripts/sync-registry.mjs",
     "sync:check": "node scripts/sync-registry.mjs --check"
   },
