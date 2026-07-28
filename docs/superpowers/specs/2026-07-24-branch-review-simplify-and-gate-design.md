@@ -26,6 +26,7 @@ Restructure the Auto-Fix phase (`## Optional Phase: Auto-Fix (--apply-fixes)`):
 1. Preconditions (clean tree, not on default branch, Findings.md exists)
    + detect test command and lint command from the tech-stack detection result
 2. BASELINE GATE — run tests + lint once; record pass/fail as the baseline
+   (if red, also record the failing-test count)
 3. Fix Classification              (unchanged)
 4. Confident-Fix Workflow          (unchanged — verify, minimal patch, commit per fix)
 5. Design-Decision Escalation      (unchanged — user picks, implement, commit)
@@ -75,7 +76,13 @@ baseline green + final red:
 baseline green + final green:
     if simplify ran → commit the simplify edits (one [automated] commit)
 baseline already red:
-    not our fault → report; discard nothing, commit nothing from simplify
+    discard nothing, commit nothing from simplify (it was skipped).
+    Compare the final failing-test count to the baseline failure count:
+        final count > baseline count → fixes introduced new breakage → ESCALATE to user
+        final count <= baseline count → not our fault → report
+    Known limitation: a swap (one test fixed, one newly broken) leaves the count
+    unchanged and goes undetected — a count comparison, not a test-identity
+    comparison, chosen to stay runner-agnostic across npm/composer/pytest/go/cargo.
 no test/lint command detected:
     skip the gate → log "no gate available" (same soft-dependency logic).
     With no gate, commit the simplify edits (relying on /simplify's own
@@ -92,7 +99,7 @@ no test/lint command detected:
 
 Append to the existing `## Auto-Fix Summary` section in `Findings.md`:
 
-- Gate result: `baseline <green|red> → final <green|red>` + test/lint command used (or "no gate available").
+- Gate result: `baseline <green|red> → final <green|red>` + test/lint command used (or "no gate available"). When the baseline is red, also report the failing-test counts: `baseline red (N failing) → final <green|red> (M failing)`.
 - Simplify status: `applied (N edits)` | `skipped: not available` | `skipped: --no-simplify` | `skipped: baseline red` | `discarded: broke tests` | `retained: innocent (gate red from functional fixes)` | `applied ungated (no gate available)`.
 
 ### D. Soft-Dependency Convention in STYLEGUIDE

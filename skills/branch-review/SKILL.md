@@ -288,8 +288,8 @@ Runs as step F6, after all functional fixes are committed, unless `$ARGUMENTS` c
 
 Two checkpoints with baseline-based blame attribution. `/simplify` must be behavior-preserving, so its edits are proven by the gate before they are committed.
 
-- **Baseline gate** (step F2): run the detected test + lint command before any mutation; record green or red.
-- **Final gate** (step F7): re-run against the working tree (simplify edits applied, still uncommitted).
+- **Baseline gate** (step F2): run the detected test + lint command before any mutation; record green or red. If red, also record the **count of failing tests** as the baseline failure count.
+- **Final gate** (step F7): re-run against the working tree (simplify edits applied, still uncommitted). If the baseline was red, also record the final failing-test count for comparison (see decision matrix).
 
 Decision matrix:
 
@@ -307,7 +307,13 @@ baseline green + final red:
     if simplify did not run:
         functional fixes are the culprit → ESCALATE to user
 baseline already red:
-    not our fault → report; simplify was skipped (baseline red), so it left no edits to discard or commit
+    simplify was skipped (baseline red), so it left no edits to discard or commit.
+    Compare the final failing-test count (step F7) to the baseline failure count (step F2):
+        final count > baseline count → fixes introduced new breakage → ESCALATE to user
+        final count <= baseline count → not our fault → report
+    Known limitation: a swap (one test fixed, one newly broken) leaves the count
+    unchanged and goes undetected — this is a count comparison, not a test-identity
+    comparison, chosen to stay runner-agnostic across npm/composer/pytest/go/cargo.
 no test/lint command detected:
     skip the gate → log "no gate available"; commit the simplify edits relying on
     /simplify's own behavior-preservation, and flag in the summary that no gate verified them
@@ -330,7 +336,7 @@ After the auto-fix phase, append a new section `## Auto-Fix Summary` to `Finding
 - Design decisions for escalation: N (with finding IDs)
 - Out-of-scope findings: N (with finding IDs and reason)
 - Discarded hypotheses (not reproducible on branch): N (with finding IDs)
-- Gate result: `baseline <green|red> → final <green|red>` + the test/lint command used (or `no gate available`)
+- Gate result: `baseline <green|red> → final <green|red>` + the test/lint command used (or `no gate available`). When the baseline is red, also report the failing-test counts: `baseline red (N failing) → final <green|red> (M failing)`.
 - Simplify status: `applied (N edits, <sha>)` | `skipped: not available` | `skipped: --no-simplify` | `skipped: baseline red` | `discarded: broke tests` | `retained: innocent (gate red from functional fixes)` | `applied ungated (no gate available)`
 
 This keeps it traceable what the skill changed in the code — and what the user still needs to decide.
