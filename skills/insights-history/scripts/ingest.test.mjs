@@ -62,6 +62,15 @@ test("hook mode is idempotent", async () => {
   assert.deepEqual(await readdir(join(data, "session-meta")), ["s1.json"]);
 });
 
+test("archive is written before the metadata marker", async () => {
+  const { data, transcript } = await scenario();
+  await ingest(data, payload(transcript));
+  const { stat } = await import("node:fs/promises");
+  const archive = await stat(join(data, "archive", "s1.slim.jsonl.gz"));
+  const meta = await stat(join(data, "session-meta", "s1.json"));
+  assert.ok(archive.mtimeMs <= meta.mtimeMs, "metadata marker must not predate the archive it attests to");
+});
+
 test("hook mode skips subagent transcripts", async () => {
   const { dir, data } = await scenario();
   const sub = join(dir, "projects", "-repo", "subagents", "agent-x.jsonl");

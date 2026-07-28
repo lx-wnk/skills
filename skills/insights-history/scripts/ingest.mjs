@@ -7,6 +7,9 @@ import { gzipSync } from "node:zlib";
 import { paths, usageDataRoot, writeBufferAtomic, writeJsonAtomic, readJson } from "./lib/store.mjs";
 import { extractMeta, extractSlim } from "./lib/transcript.mjs";
 
+// 6.3 MB transcript measured at 0.13 s end to end; the largest real
+// transcript is 29.6 MB, extrapolating to ~0.6 s. 5 s leaves ~8x headroom
+// while still guaranteeing the hook never stalls a session exit.
 const SELF_TIMEOUT_MS = 5000;
 
 async function readStdin() {
@@ -59,8 +62,14 @@ export async function ingestOne(transcriptPath, { sessionId, cwd, root }) {
 
   await mkdir(p.sessionMeta, { recursive: true });
   await mkdir(p.archive, { recursive: true });
-  await writeJsonAtomic(join(p.sessionMeta, `${id}.json`), meta);
+  // Order matters. The metadata file is the idempotency marker: the
+  // up-to-date check above reads only its transcript_mtime. Writing it last
+  // means a crash — or the self-timeout firing — leaves no marker, so the
+  // next run redoes the work. Writing it first would record success for an
+  // archive that was never written, and every later run would skip it
+  // forever.
   await writeBufferAtomic(join(p.archive, `${id}.slim.jsonl.gz`), gzipSync(Buffer.from(slim)));
+  await writeJsonAtomic(join(p.sessionMeta, `${id}.json`), meta);
   return "written";
 }
 
