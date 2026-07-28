@@ -73,7 +73,7 @@ Two decoupled halves. The hook secures data (cheap, deterministic, no LLM). The 
 
 ```
 SessionEnd ──► scripts/ingest.mjs ──► session-meta/<id>.json       [built-in schema]
-   (~50ms)        (Node, no LLM)   └► archive/<id>.slim.jsonl.gz   [~0.7% of raw]
+   (~50ms)        (Node, no LLM)   └► archive/<id>.slim.jsonl.gz   [~1.6% of raw]
 
 /insights-history ──► backfill ──► enrich missing facets ──► facets/<id>.json  [built-in schema]
    (on demand)                  └► aggregate ──► narratives/<period>.json      [frozen]
@@ -103,7 +103,9 @@ Sharing the first two directories with the built-in is deliberate and bidirectio
 
 Retained: user messages, assistant text, timestamps, tool **names** and error status. Dropped: tool result payloads (file contents, command output).
 
-Measured on a 2.35 MB session: 0.10 MB slim (4.5%), 0.02 MB gzipped (0.7%). Extrapolated: ~13 MB per year, against ~1.9 GB per year for keeping raw transcripts.
+Measured with the implemented `extractSlim` across all 85 transcripts on disk (2026-07-28): **177.3 MB raw → 2.85 MB gzipped, 1.61%**. Over the 34-day window that is roughly **31 MB per year**, against ~1.9 GB per year for keeping raw transcripts.
+
+Per-session ratios vary with what a session spent its tokens on: tool-heavy sessions compress to 1.2–2.2%, while a session dominated by assistant prose reached 10.8%. An earlier estimate of 0.7%, taken from a single favourable 2.35 MB sample, was optimistic by a factor of 2.3 — the aggregate figure above is the one to plan against.
 
 ## Component: `scripts/ingest.mjs`
 
