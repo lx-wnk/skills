@@ -71,6 +71,12 @@
       "license": "MIT"
     },
     {
+      "name": "reproduce-first-debug",
+      "description": "Debug a defect under a hard reproduce-first gate — no hypothesis, no code reading for causes, and no fix proposal before a reproduction artifact has been shown to fail. The reproduction is then promoted to a permanent regression test, committed RED before the fix, and the outcome is logged to a bug ledger. Uses local fixtures, never real ticket or production data. Use this skill whenever a defect is reported without a confirmed root cause, or the user says \"debug this\", \"fix this bug\", \"why is X broken\", \"this is failing\", \"the test is red\", \"investigate this error\", \"find the root cause\", \"debugge das\", \"warum geht das nicht\", \"das funktioniert nicht\", \"finde den Fehler\", \"such den Bug\", \"der Test ist rot\", \"Fehler analysieren\". Also trigger when a stack trace, failing test output, or error log is pasted without a question. DO NOT trigger for a known cause where only the fix is wanted, for adding tests to working code (that is ordinary test work), or for reviewing a diff — use `branch-review` for that.",
+      "path": "skills/reproduce-first-debug",
+      "license": "MIT"
+    },
+    {
       "name": "session-handoff",
       "description": "Generate a structured handoff document at the end of a work session — what was implemented, which decisions were made and why, open questions, and recommended next steps. The document is written to `outputs/HANDOFF.md` (repo convention, cf. `branch-review`). Use this skill whenever the user wants to end a session, create a handoff, or says: \"session-handoff\", \"wrap up\", \"end of session\", \"session summary\", \"hand over to next session\", \"Handoff erstellen\", \"Session abschließen\", \"was haben wir heute gemacht\", \"Zusammenfassung der Session\", \"nächste Schritte dokumentieren\", \"übergib an nächste Session\".",
       "path": "skills/session-handoff",
