@@ -119,3 +119,34 @@ test("extractSlim records tool errors as a flag, not as text", async () => {
   assert.equal(withError.length, 1);
   assert.equal(withError[0].toolError, "Command Failed");
 });
+
+test("tool errors are detected by the is_error flag, not by body wording", () => {
+  const lines = [
+    { type: "user", timestamp: "2026-07-01T09:00:00.000Z", message: { content: "go" } },
+    {
+      type: "assistant",
+      timestamp: "2026-07-01T09:00:05.000Z",
+      message: {
+        usage: { input_tokens: 1, output_tokens: 1 },
+        content: [{ type: "tool_use", name: "Grep", input: {} }],
+      },
+    },
+    // Mentions "error" but succeeded — must not count.
+    {
+      type: "user",
+      timestamp: "2026-07-01T09:00:10.000Z",
+      message: { content: [{ type: "tool_result", tool_use_id: "t1", content: "src/a.ts:12: throw new Error('x')" }] },
+    },
+    // Genuinely failed, wording contains none of the old search words.
+    {
+      type: "user",
+      timestamp: "2026-07-01T09:00:20.000Z",
+      message: {
+        content: [{ type: "tool_result", tool_use_id: "t2", is_error: true, content: "interrupted by user" }],
+      },
+    },
+    { type: "user", timestamp: "2026-07-01T09:00:30.000Z", message: { content: "done" } },
+  ];
+  const meta = extractMeta(lines, { sessionId: "s", projectPath: "/r", transcriptMtime: 1 });
+  assert.equal(meta.tool_errors, 1);
+});

@@ -119,11 +119,13 @@ export function extractMeta(lines, { sessionId, projectPath, transcriptMtime }) 
       continue;
     }
 
-    if (line?.type === "user" && Array.isArray(line.message?.content)) {
+    if (line?.type === "user" && !line.isSidechain && Array.isArray(line.message?.content)) {
       for (const block of line.message.content) {
-        if (block?.type !== "tool_result") continue;
+        // Claude Code marks failures explicitly. Sniffing the body text
+        // instead over-counted by 4.6x — ordinary output mentioning "error"
+        // matched, and most real failures did not.
+        if (block?.type !== "tool_result" || block.is_error !== true) continue;
         const body = typeof block.content === "string" ? block.content : JSON.stringify(block.content ?? "");
-        if (!/error|failed|not found|rejected/i.test(body)) continue;
         meta.tool_errors += 1;
         const label = classifyToolError(body);
         meta.tool_error_categories[label] = (meta.tool_error_categories[label] ?? 0) + 1;
@@ -186,9 +188,8 @@ export function extractSlim(lines) {
 
     if (line?.type === "user" && !line.isSidechain && Array.isArray(line.message?.content)) {
       for (const block of line.message.content) {
-        if (block?.type !== "tool_result") continue;
+        if (block?.type !== "tool_result" || block.is_error !== true) continue;
         const body = typeof block.content === "string" ? block.content : "";
-        if (!/error|failed|not found|rejected/i.test(body)) continue;
         slim.push({ kind: "tool_error", at: line.timestamp, toolError: classifyToolError(body) });
       }
       continue;

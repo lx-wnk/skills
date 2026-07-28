@@ -2,7 +2,7 @@
 {"type":"assistant","isSidechain":false,"timestamp":"2026-07-01T09:00:30.000Z","message":{"role":"assistant","usage":{"input_tokens":10,"output_tokens":100},"content":[{"type":"text","text":"ok"},{"type":"tool_use","name":"Bash","input":{"command":"git commit -m x"}}]}}
 {"type":"user","isSidechain":false,"timestamp":"2026-07-01T09:00:40.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t1","content":"done"}]}}
 {"type":"assistant","isSidechain":false,"timestamp":"2026-07-01T09:01:00.000Z","message":{"role":"assistant","usage":{"input_tokens":5,"output_tokens":50},"content":[{"type":"tool_use","name":"Edit","input":{"file_path":"/repo/a.ts"}}]}}
-{"type":"user","isSidechain":false,"timestamp":"2026-07-01T09:01:10.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t2","content":"Error: exit code 1"}]}}
+{"type":"user","isSidechain":false,"timestamp":"2026-07-01T09:01:10.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t2","is_error":true,"content":"Error: exit code 1"}]}}
 {"type":"user","isSidechain":true,"timestamp":"2026-07-01T09:01:20.000Z","message":{"role":"user","content":"subagent chatter"}}
 {"type":"assistant","isSidechain":true,"timestamp":"2026-07-01T09:01:30.000Z","message":{"role":"assistant","usage":{"input_tokens":1,"output_tokens":1},"content":[{"type":"text","text":"subagent reply"}]}}
 {"type":"file-history-snapshot","messageId":"m1","snapshot":{}}
