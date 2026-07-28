@@ -53,7 +53,7 @@ Prefer to be explicit? Every skill is also a slash command: `/branch-review`.
 
 | Skill | Description | Invoke |
 | --- | --- | --- |
-| [branch-review](skills/branch-review/SKILL.md) | Multi-agent review of branch diff — code/security/SEO/legal/UX/perf; optional `--apply-fixes` mode | `/branch-review [base-branch] [--apply-fixes]` |
+| [branch-review](skills/branch-review/SKILL.md) | Multi-agent review of branch diff — code/security/SEO/legal/UX/perf; optional `--apply-fixes` mode with `/simplify` pass + test-lint gate | `/branch-review [base-branch] [--apply-fixes] [--no-simplify]` |
 | [full-project-review](skills/full-project-review/SKILL.md) | Multi-agent audit of the whole project (HEAD state, all repos) | `/full-project-review` |
 | [oss-readiness](skills/oss-readiness/SKILL.md) | Audit a repo for public-release readiness — README, docs, community-health files, repo signals | `/oss-readiness [path] [--apply-fixes]` |
 
