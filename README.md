@@ -69,6 +69,7 @@ Prefer to be explicit? Every skill is also a slash command: `/branch-review`.
 
 | Skill | Description | Invoke |
 | --- | --- | --- |
+| [insights-history](skills/insights-history/SKILL.md) | Usage history over any time range — trend buckets, period deltas, durable archive against transcript retention | `/insights-history [--last 90d] [--compare A vs B]` |
 | [obsidian](skills/obsidian/SKILL.md) | Obsidian vault access via Local REST API — read, search, create, update notes | `/obsidian [search query or note path]` |
 | [session-handoff](skills/session-handoff/SKILL.md) | Generate a structured `outputs/HANDOFF.md` at the end of a session — changes, decisions, next steps | `/session-handoff [focus topics or time hint]` |
 | [tech-gazette](skills/tech-gazette/SKILL.md) | Generate a daily or weekly tech news briefing as a self-contained HTML newspaper | `/tech-gazette [--daily\|--weekly] [customers]` |

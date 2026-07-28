@@ -250,7 +250,9 @@ Copying `ingest.mjs` on its own does not work and must never be documented that 
 ```json
 {
   "hooks": {
-    "SessionEnd": [{ "hooks": [{ "type": "command", "command": "node ~/.claude/scripts/insights-history/ingest.mjs" }] }]
+    "SessionEnd": [
+      { "hooks": [{ "type": "command", "command": "node ~/.claude/scripts/insights-history/ingest.mjs" }] }
+    ]
   }
 }
 ```
