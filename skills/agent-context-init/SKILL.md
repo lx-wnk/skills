@@ -42,7 +42,7 @@ TAG="${ARGUMENTS:-$(gh api repos/lx-wnk/Agent-Context/releases/latest --jq .tag_
 curl -fsSL "https://raw.githubusercontent.com/lx-wnk/Agent-Context/${TAG}/.prompts/setup-prompt.md"
 ```
 
-Follow the fetched instructions exactly. The setup prompt handles:
+Follow the fetched instructions, subject to the consent gates in **Trust Boundary & Consent** below. The setup prompt handles:
 
 1. **Version selection** — fetch available releases, let user choose (or use `$ARGUMENTS` if a version was specified)
 2. **Shared files** — download tarball, extract framework files into `.agent-context/`

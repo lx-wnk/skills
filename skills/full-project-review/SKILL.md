@@ -67,7 +67,7 @@ Path: store in the outputs/workspace folder (`outputs/Findings.md` or equivalent
 ### Structure
 
 1. **Frontmatter** — date, audit scope ("Full Project"), included repos, commit SHAs per repo, PR status (present/none — not a blocker), tech stack per repo, list of reviewer agents, paths inspected, live URL if checked.
-2. **Original prompt** — verbatim, in a code block. Before writing it, mask any secret-shaped token in the prompt itself (API keys, tokens, passwords) the same way findings mask secrets (`AKIA…7of8`) — the echo must never reproduce a live credential.
+2. **Original prompt** — reproduced in a code block, verbatim except secret-shaped tokens (API keys, tokens, passwords), which are masked the same way findings mask secrets (`AKIA…7of8`) — the echo must never reproduce a live credential.
 3. **Executive Summary** (max. 15 lines) — security traffic light (red/yellow/green + 1-sentence justification), top 3 risks, top 3 quick wins, finding counts per priority (e.g. "P0: 2, P1: 7, P2: 23, …"), compliance status per relevant standard/jurisdiction (GDPR, OWASP, WCAG, …) as a short traffic light.
 4. **Coverage Report** — what was checked (repos, paths, tools, versions), what was NOT checked + reason (access, time, out-of-scope).
 5. **Findings Index Table** — all findings sorted by priority (columns: ID, Prio, Category, Title, Location, Effort).
