@@ -135,7 +135,7 @@ Two outputs per run:
 
 ## Enrichment rules
 
-Sessions lacking a facet are assessed from their slim archive (`archive/<id>.slim.jsonl.gz`) using the same field shape and enum categories the built-in tool itself uses — see `references/builtin-schema.md` for the exact facet object shape to produce.
+Sessions lacking a facet are assessed from their slim archive (`archive/<id>.slim.jsonl.gz`) using the same field shape and the category names the built-in tool defines, though it does not enforce them — see `references/builtin-schema.md` for the exact facet object shape to produce and for how open the category vocabulary actually is in practice.
 
 - **Cost gate, always.** Count sessions missing a facet in the requested range and state the number before doing anything else. Above **20** missing sessions, ask the user for confirmation before starting — enrichment costs real tokens and the user should decide whether that trade is worth it for this report.
 - **One subagent per batch.** Never inline slim transcripts into the main context — a batch of missing sessions goes to a subagent (`Agent` tool), which reads the slim archives, extracts facets in the built-in's shape, and returns structured JSON. The main thread stays clean regardless of how many sessions are missing.
@@ -163,10 +163,10 @@ This is a **write skill** (STYLEGUIDE §5). Every path it creates or edits:
 | `~/.claude/usage-data/facets/*.json` | enrichment, when facets are missing | no (the ≥20 count gate above covers cost, not a write confirmation) |
 | `~/.claude/usage-data/narratives/*.json` | narrative step, for closed buckets not already frozen (or any bucket with `--refresh`) | no |
 | `~/.claude/usage-data/reports/*.html` | render step, every run | no |
-| `~/.claude/scripts/insights-ingest.mjs` | **only** under `--install-hook` | yes — shown before writing |
-| `~/.claude/settings.json` | **only** under `--install-hook` | yes — diff shown before writing |
+| `~/.claude/scripts/insights-history/ingest.mjs` + `lib/store.mjs` + `lib/transcript.mjs` | **only** under `--install-hook` | yes — one confirmation, shown before either write |
+| `~/.claude/settings.json` | **only** under `--install-hook` | yes — same confirmation, diff shown before writing |
 
-Nothing is ever written into the repository, and nothing is ever written into `~/.claude/projects/` (that directory is the transcript source and is read-only from this skill's perspective). See `references/ingest-hook.md` for the exact `--install-hook` sequence and the reasoning behind gating it on explicit confirmation.
+`ingest.mjs` imports `lib/store.mjs` and `lib/transcript.mjs` by relative path, so `--install-hook` copies all three files preserving that layout — copying `ingest.mjs` alone leaves those imports unresolvable and the hook fails on every session end before its own error handling can run. The copy and the `settings.json` patch share a **single** confirmation: the file list and destination are shown alongside the settings diff, the user is asked once, and only after "yes" does the copy happen, followed by a verification probe against the copied tree, followed by the settings patch — never the other order, and never a settings write while the copy is unverified. Nothing is ever written into the repository, and nothing is ever written into `~/.claude/projects/` (that directory is the transcript source and is read-only from this skill's perspective). See `references/ingest-hook.md` for the exact sequence, the probe command, and the reasoning behind gating both writes on one explicit confirmation.
 
 ## Data limits and trust
 

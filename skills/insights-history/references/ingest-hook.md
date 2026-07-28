@@ -11,12 +11,47 @@ A plugin can ship `hooks.json` and have it load automatically on install — no 
 
 The fix for both is the same: install the hook script itself to a stable, plugin-independent path, and treat writing it as an explicit, confirmed action rather than an install-time default.
 
+## `ingest.mjs` is not a single file
+
+`scripts/ingest.mjs` imports two sibling modules by relative path — `./lib/store.mjs` and `./lib/transcript.mjs`. Copying only `ingest.mjs` to a standalone location leaves those imports pointing at a `lib/` directory that does not exist there, and Node fails at module resolution before the script's own `try/catch` (or its inertness guarantee) ever runs:
+
+```
+$ echo '{"session_id":"probe","transcript_path":"/nonexistent.jsonl","hook_event_name":"SessionEnd"}' \
+  | node /tmp/hook-repro/ingest.mjs
+node:internal/modules/esm/resolve:272
+    throw new ERR_MODULE_NOT_FOUND(...)
+exit=1
+```
+
+That failure happens on every session end: a stack trace on stderr, nothing archived — precisely what this skill exists to prevent. The install therefore copies the whole relative layout `ingest.mjs` depends on, not just the one file. `ingest.mjs` needs only two of `lib/`'s five modules (`store.mjs`, `transcript.mjs` — `aggregate.mjs`, `range.mjs`, and `render.mjs` are `report.mjs`'s dependencies, not the hook's), so only those two are copied.
+
 ## What `--install-hook` does
 
-1. Copies `scripts/ingest.mjs` to `~/.claude/scripts/insights-ingest.mjs` — a path outside any plugin cache, so it survives updates and uninstalls of this skill.
+A **single confirmation** covers both writes into the user's environment — nothing is written before the user has seen and approved everything that will be written:
+
+1. Lists the files that will be copied and their destination:
+   - `scripts/ingest.mjs` → `~/.claude/scripts/insights-history/ingest.mjs`
+   - `scripts/lib/store.mjs` → `~/.claude/scripts/insights-history/lib/store.mjs`
+   - `scripts/lib/transcript.mjs` → `~/.claude/scripts/insights-history/lib/transcript.mjs`
 2. Shows the exact `settings.json` diff it intends to make (below).
-3. Asks for explicit confirmation.
-4. Only after confirmation, patches `~/.claude/settings.json` to add the hook entry. **Never proceeds to step 4 without an explicit yes** — a `--install-hook` invocation that is interrupted, or answered "no," leaves the copied script in place but the hook un-registered, which is inert and safe.
+3. Asks for one explicit confirmation covering both the copy and the settings patch.
+4. **Only after confirmation:**
+   1. Performs the copy, preserving the `lib/` layout.
+   2. Runs the verification probe (below) against the copied tree. A non-zero exit or any output stops here — the settings patch is **not** applied, and the user is told the copy is broken rather than being left with a registered hook that can't run.
+   3. Patches `~/.claude/settings.json` to add the hook entry.
+
+An interrupted or declined `--install-hook` invocation leaves nothing behind — no partial copy, no registered hook — because both writes are gated by the same single "yes."
+
+## Verify the copy works, before touching settings
+
+Run immediately after the copy, before the `settings.json` patch:
+
+```bash
+echo '{"session_id":"probe","transcript_path":"/nonexistent.jsonl","hook_event_name":"SessionEnd"}' \
+  | node ~/.claude/scripts/insights-history/ingest.mjs; echo "exit=$?"
+```
+
+Expected: `exit=0` and no output — the same inertness the hook guarantees for a real malformed payload. A non-zero exit or any stack trace means the copy is incomplete (a missing `lib/` module is the most likely cause) — stop and do not patch `settings.json`.
 
 ## The settings.json snippet
 
@@ -28,7 +63,7 @@ The fix for both is the same: install the hook script itself to a stable, plugin
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.claude/scripts/insights-ingest.mjs"
+            "command": "node ~/.claude/scripts/insights-history/ingest.mjs"
           }
         ]
       }
@@ -41,13 +76,14 @@ If `~/.claude/settings.json` already has a `hooks.SessionEnd` array (from anothe
 
 ## Copy target
 
-`~/.claude/scripts/insights-ingest.mjs` — chosen because it is:
+`~/.claude/scripts/insights-history/` — chosen because it is:
 
 - Outside `~/.claude/plugins/`, so a plugin update or removal never touches it.
 - Inside `~/.claude/`, so it travels with the rest of the user's Claude Code configuration (backups, dotfile syncing) without needing repo access.
-- A stable, predictable path a user can `cat`, edit, or `rm` without going through the skill again.
+- A stable, predictable path a user can `cat`, edit, or `rm -rf` without going through the skill again.
+- A directory, not a single file, because the hook script has real internal dependencies (see above) — the install target has to preserve that shape or the hook cannot run.
 
-Re-running `--install-hook` overwrites the copy with the current `scripts/ingest.mjs`, so upgrading this skill and re-running `--install-hook` is how the installed hook picks up ingest fixes.
+Re-running `--install-hook` overwrites the copy with the current `scripts/ingest.mjs` and its two `lib/` dependencies, so upgrading this skill and re-running `--install-hook` is how the installed hook picks up ingest fixes.
 
 ## Verifying it fires
 
