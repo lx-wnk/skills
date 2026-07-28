@@ -95,10 +95,11 @@ Never have a skill silently switch from read-only to write based on inference �
 
 Skills that emit a deliverable file:
 
-- Write to `outputs/<filename>` (e.g. `outputs/Findings.md`, `outputs/HANDOFF.md`).
-- Create the directory with `mkdir -p outputs` rather than failing if it doesn't exist.
+- Write to `outputs/<filename>` (e.g. `outputs/Findings.md`), or `outputs/<group>/<filename>` for skills that group related outputs in a subdirectory (e.g. `outputs/handoffs/latest.md`).
+- Create the directory with `mkdir -p outputs` (or `mkdir -p outputs/<group>`) rather than failing if it doesn't exist.
 - The repository's `.gitignore` is responsible for ignoring `outputs/` — a skill must not modify `.gitignore` itself.
 - If the file already exists: default to **appending a new dated section** above the existing content. Only ask the user before overwriting.
+- For handoff-style outputs where a single current file must stay at a stable path (e.g. `latest.md`): **rotate** the previous file to a dated, topic-named archive instead of appending or overwriting. Never overwrite — escalate the archive filename (`-2`, `-3`, …) on collision. See `session-handoff` as the reference implementation.
 
 For schema-driven outputs (e.g. `Findings.md`):
 

@@ -2,21 +2,21 @@
 name: session-handoff
 license: MIT
 description: >-
-  Generate a structured handoff document at the end of a work session — what was implemented, which decisions were made and why, open questions, and recommended next steps. The document is written to `outputs/HANDOFF.md` (repo convention, cf. `branch-review`). Use this skill whenever the user wants to end a session, create a handoff, or says: "session-handoff", "wrap up", "end of session", "session summary", "hand over to next session", "Handoff erstellen", "Session abschließen", "was haben wir heute gemacht", "Zusammenfassung der Session", "nächste Schritte dokumentieren", "übergib an nächste Session".
+  Generate a structured handoff document at the end of a work session — what was implemented, which decisions were made and why, open questions, and recommended next steps. The document is written to `outputs/handoffs/latest.md`, and the previous handoff is rotated to a dated, topic-named archive (repo convention, cf. `branch-review`). Use this skill whenever the user wants to end a session, create a handoff, or says: "session-handoff", "wrap up", "end of session", "session summary", "hand over to next session", "Handoff erstellen", "Session abschließen", "was haben wir heute gemacht", "Zusammenfassung der Session", "nächste Schritte dokumentieren", "übergib an nächste Session".
 
 
 user-invocable: true
 argument-hint: "[focus topics or time hint, e.g. 'Focus: Auth refactoring' or 'since Monday']"
-allowed-tools: "Bash(git *) Bash(date *) Bash(basename *) Bash(mkdir *) Read Write Edit"
+allowed-tools: "Bash(git *) Bash(date *) Bash(basename *) Bash(mkdir *) Bash(mv *) Bash(test *) Bash(ls *) Read Write Edit"
 ---
 
 # Session Handoff
 
-Generate a structured handoff document at `outputs/HANDOFF.md` at the end of a work session. Goal: the next session (or another developer) can pick up exactly where this one left off without reconstructing context from scratch.
+Generate a structured handoff document at `outputs/handoffs/latest.md` at the end of a work session. Goal: the next session (or another developer) can pick up exactly where this one left off without reconstructing context from scratch.
 
 **Language:** the handoff content follows the language of the user's request (English request → English handoff, German request → German handoff). Commit messages and code stay in their original language.
 
-**Output path:** always `outputs/HANDOFF.md` (consistent with `branch-review` / `full-project-review`). `outputs/` should be `.gitignore`-d at repo level; that is the repo's responsibility, not this skill's.
+**Output path:** the current handoff is always `outputs/handoffs/latest.md`; on each run the previous `latest.md` is rotated to a dated, topic-named archive under `outputs/handoffs/` (see Step 3). `outputs/` should be `.gitignore`-d at repo level; that is the repo's responsibility, not this skill's.
 
 ## Examples
 
@@ -44,8 +44,10 @@ Do not rely on `@{N hours ago}` — that reflog syntax is empty on fresh clones 
 ## Step 2: Collect data
 
 ```bash
-# Date/time with timezone → fills {DATE_UTC}
+# Date/time with timezone → fills {DATE_UTC} (display header)
 date -u '+%Y-%m-%d %H:%M UTC'
+# Date only, no time → fills {DATE} (handoff-date frontmatter + archive filenames)
+date -u '+%Y-%m-%d'
 
 # Repo name → fills {REPO-NAME}
 basename "$(git rev-parse --show-toplevel)"
@@ -79,24 +81,58 @@ git grep --untracked -n "TODO\|FIXME\|HACK\|XXX\|NOCOMMIT" -- ':!*.lock' ':!node
 
 Optionally read files the git data identifies as central (e.g. files with the largest churn in the range, `CLAUDE.md` if present).
 
-## Step 3: Write HANDOFF.md
+## Step 3: Rotate and write the handoff
 
-**Ensure the output directory exists:**
+**Prepare the handoffs directory:**
 
 ```bash
-mkdir -p outputs
+mkdir -p outputs/handoffs
 ```
 
-**Check for an existing file:**
+**One-time legacy migration:** if a legacy `outputs/HANDOFF.md` exists and there is no `outputs/handoffs/latest.md` yet, move it once so nothing is lost. Use the leading `YYYY-MM-DD` date from the legacy file's top `# Session Handoff — {DATE_UTC}` header if present (drop the time), else today's UTC date. If the target already exists, suffix `-2`, `-3`, … — never overwrite:
 
-- If `outputs/HANDOFF.md` exists → **default: prepend a new dated section at the top** (old sections stay intact).
-- Only ask the user when they signal a different strategy ("replace", "rewrite").
+```bash
+target="outputs/handoffs/${LEGACY_DATE}-legacy.md"
+n=2
+while [ -e "$target" ]; do
+  target="outputs/handoffs/${LEGACY_DATE}-legacy-${n}.md"
+  n=$((n + 1))
+done
+mv outputs/HANDOFF.md "$target"
+```
+
+**Determine the topic slug** (precedence, first match wins):
+
+1. `$ARGUMENTS` focus (strip a leading `focus:` / `Focus:` prefix)
+2. the current git branch name
+3. auto-derived from the handoff content (the session's main feature/area)
+
+Slugify: lowercase, kebab-case, ASCII only, collapse spaces/underscores to `-`, max ~40 chars.
+
+**Rotate the existing latest** — if `outputs/handoffs/latest.md` exists:
+
+1. Read its YAML frontmatter → `handoff-date` and `handoff-slug`.
+   - Fallback when the frontmatter is missing or corrupt: parse the leading `YYYY-MM-DD` date out of the first H1 line (`# ... — {DATE_UTC}`, regardless of wording/language) and drop the time. Use the slug `session`. Else, if no date can be parsed, use today's UTC date.
+2. Compute the archive target `outputs/handoffs/{handoff-date}-{handoff-slug}.md`. If that file already exists, append `-2`, `-3`, … until the name is free. **Never overwrite** — a lost handoff is expensive.
+3. Compute `$target` with the same escalation as above (`while [ -e "$target" ]`, appending `-2`, `-3`, …), then:
+   ```bash
+   mv outputs/handoffs/latest.md "$target"
+   ```
+
+If no `latest.md` exists yet, skip rotation (this is the first handoff).
+
+**Write the new `outputs/handoffs/latest.md`** using the schema below, stamped with fresh frontmatter (`handoff-date` = today's UTC date, `handoff-slug` = the slug determined above).
 
 **Generate the file contents** using the schema below. **Important:** the HTML comments (`<!-- ... -->`) are instructions for you — they **must not** appear in the final file. Replace each comment with the actual content, or leave the section as `_(none)_`.
 
 Section headers in the template are shown in English; translate them to the user's request language when emitting the file.
 
 ```markdown
+---
+handoff-date: "{DATE}"
+handoff-slug: "{TOPIC_SLUG}"
+---
+
 # Session Handoff — {DATE_UTC}
 
 > Generated by `/session-handoff` · Repo: {REPO-NAME} · Branch: {BRANCH}
@@ -178,9 +214,10 @@ _Last updated: {DATE_UTC}_
 
 Tell the user:
 
-- Path of the created/updated file (`outputs/HANDOFF.md`)
+- Path of the current handoff (`outputs/handoffs/latest.md`)
+- Which archive the previous handoff was rotated into, or that this is the first handoff (nothing rotated)
+- If a legacy `outputs/HANDOFF.md` was migrated: the legacy archive path
 - Short summary: how many commits, how many open questions, how many next steps
-- Whether a new section was prepended or the file was newly created
 
 ## Related skills
 
