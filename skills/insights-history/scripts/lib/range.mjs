@@ -1,4 +1,9 @@
 const ACCEPTED = "accepted forms: YYYY-MM-DD, YYYY-MM, YYYY-Www, <N>d|w|m";
+const DAY = 86400000;
+// Date.UTC remaps years 0-99 onto 1900-1999, so "0099-06-15" would silently
+// become 1999-06-15 and the report would cover a range nobody asked for.
+// Every absolute token is floored here instead.
+const MIN_YEAR = 1000;
 
 function utc(year, month, day) {
   return new Date(Date.UTC(year, month, day));
@@ -14,19 +19,35 @@ function reject(token, why) {
   throw new RangeError(`cannot parse period "${token}" — ${why}; ${ACCEPTED}`);
 }
 
+// ISO 8601 assigns a week to the year containing its Thursday, so every week
+// calculation in this file — a date's week number, a year's week count, a
+// week's starting Monday — derives from this one function. Keeping a single
+// implementation is deliberate: the two that used to live here disagreed, and
+// the one used for validation over-counted 22 of the years 1990-2040 by one
+// week (it accepted "2016-W53", which does not exist).
+function isoThursday(date) {
+  const dayOfWeek = (date.getUTCDay() + 6) % 7; // Monday = 0
+  return new Date(date.getTime() + (3 - dayOfWeek) * DAY);
+}
+
+// Verified against Python's datetime.date.isocalendar() for every year from
+// 1990 to 2040, including the week-53 years and the year-boundary dates
+// (2016-01-03 -> 2015-W53, 2019-12-30 -> 2020-W01, 2021-01-01 -> 2020-W53).
+function isoWeek(date) {
+  const thursday = isoThursday(date);
+  const year = thursday.getUTCFullYear();
+  const firstThursday = isoThursday(utc(year, 0, 4));
+  return { year, week: 1 + Math.round((thursday - firstThursday) / (7 * DAY)) };
+}
+
 function isoWeeksInYear(year) {
-  const dec28 = utc(year, 11, 28);
-  const dayOfWeek = (dec28.getUTCDay() + 6) % 7;
-  const thursday = new Date(dec28.getTime() + (3 - dayOfWeek) * 86400000);
-  const jan1 = utc(thursday.getUTCFullYear(), 0, 1);
-  return 1 + Math.round((thursday - jan1) / (7 * 86400000));
+  // 28 December always falls in the last ISO week of its calendar year.
+  return isoWeek(utc(year, 11, 28)).week;
 }
 
 function isoWeekStart(year, week) {
-  const jan4 = utc(year, 0, 4);
-  const dayOfWeek = (jan4.getUTCDay() + 6) % 7;
-  const week1Monday = new Date(jan4.getTime() - dayOfWeek * 86400000);
-  return new Date(week1Monday.getTime() + (week - 1) * 7 * 86400000);
+  const week1Monday = new Date(isoThursday(utc(year, 0, 4)).getTime() - 3 * DAY);
+  return new Date(week1Monday.getTime() + (week - 1) * 7 * DAY);
 }
 
 export function parsePeriod(token, now = new Date()) {
@@ -35,11 +56,13 @@ export function parsePeriod(token, now = new Date()) {
   if ((match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(token))) {
     const [year, month, day] = [+match[1], +match[2], +match[3]];
     if (month < 1 || month > 12) reject(token, `month ${month} is out of range`);
+    if (year < MIN_YEAR) reject(token, `year ${match[1]} is before the earliest supported year ${MIN_YEAR}`);
     const at = utc(year, month - 1, day);
-    // Date.UTC silently rolls 2026-06-31 forward to 2026-07-01. Round-tripping
-    // catches that instead of reporting on a range the user never asked for.
-    if (at.getUTCMonth() !== month - 1 || at.getUTCDate() !== day) {
-      reject(token, `${year}-${match[2]} has no day ${day}`);
+    // Date.UTC silently rolls 2026-06-31 forward to 2026-07-01, and remaps
+    // two-digit years. Round-tripping every component catches both instead of
+    // reporting on a range the user never asked for.
+    if (at.getUTCFullYear() !== year || at.getUTCMonth() !== month - 1 || at.getUTCDate() !== day) {
+      reject(token, `${match[1]}-${match[2]} has no day ${day}`);
     }
     return { start: at, end: endOfDay(at) };
   }
@@ -47,11 +70,13 @@ export function parsePeriod(token, now = new Date()) {
   if ((match = /^(\d{4})-(\d{2})$/.exec(token))) {
     const [year, month] = [+match[1], +match[2]];
     if (month < 1 || month > 12) reject(token, `month ${month} is out of range`);
+    if (year < MIN_YEAR) reject(token, `year ${match[1]} is before the earliest supported year ${MIN_YEAR}`);
     return { start: utc(year, month - 1, 1), end: endOfDay(utc(year, month, 0)) };
   }
 
   if ((match = /^(\d{4})-W(\d{2})$/.exec(token))) {
     const [year, week] = [+match[1], +match[2]];
+    if (year < MIN_YEAR) reject(token, `year ${match[1]} is before the earliest supported year ${MIN_YEAR}`);
     const maxWeek = isoWeeksInYear(year);
     if (week < 1 || week > maxWeek) reject(token, `${year} has weeks 01 to ${maxWeek}`);
     const start = isoWeekStart(year, week);
@@ -62,27 +87,21 @@ export function parsePeriod(token, now = new Date()) {
     const count = +match[1];
     if (count < 1) reject(token, "a relative span must be at least 1");
     const days = { d: 1, w: 7, m: 30 }[match[2]] * count;
-    return { start: new Date(now.getTime() - days * 86400000), end: now };
+    return { start: new Date(now.getTime() - days * DAY), end: now };
   }
 
   reject(token, "unrecognised format");
 }
 
 export function bucketKey(date, granularity) {
-  const year = date.getUTCFullYear();
   if (granularity === "month") {
-    return `${year}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
   }
-  const target = new Date(Date.UTC(year, date.getUTCMonth(), date.getUTCDate()));
-  const dayOfWeek = (target.getUTCDay() + 6) % 7;
-  target.setUTCDate(target.getUTCDate() - dayOfWeek + 3);
-  const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
-  const offset = (firstThursday.getUTCDay() + 6) % 7;
-  firstThursday.setUTCDate(firstThursday.getUTCDate() - offset + 3);
-  const week = 1 + Math.round((target - firstThursday) / (7 * 86400000));
-  return `${target.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+  const day = utc(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  const { year, week } = isoWeek(day);
+  return `${year}-W${String(week).padStart(2, "0")}`;
 }
 
 export function autoGranularity(start, end) {
-  return (end - start) / 86400000 <= 90 ? "week" : "month";
+  return (end - start) / DAY <= 90 ? "week" : "month";
 }

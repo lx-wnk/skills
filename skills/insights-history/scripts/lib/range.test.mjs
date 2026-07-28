@@ -45,8 +45,48 @@ test("parsePeriod rejects an unparsable token by naming the accepted forms", () 
 });
 
 test("parsePeriod rejects tokens that match the shape but not the calendar", () => {
-  for (const token of ["2026-13", "2026-13-01", "2026-06-31", "2026-02-30", "2026-W60", "2026-W00", "0d"]) {
+  const tokens = [
+    "2026-13",
+    "2026-13-01",
+    "2026-06-31",
+    "2026-02-30",
+    "2026-W60",
+    "2026-W00",
+    "0d",
+    // Date.UTC remaps years 0-99 onto 1900-1999. Accepting these would report
+    // on 1999 or 1900 while echoing the year the user typed.
+    "0099-06-15",
+    "0099-06",
+    "0099-W26",
+    "0000-01-01",
+  ];
+  for (const token of tokens) {
     assert.throws(() => parsePeriod(token, NOW), RangeError, `expected "${token}" to be rejected`);
+  }
+});
+
+test("parsePeriod knows which years have an ISO week 53", () => {
+  // 2026 genuinely has 53 ISO weeks; 2027 has 52. Checked against Python's
+  // datetime.date.isocalendar(). A second, divergent week implementation used
+  // to accept week 53 in 52-week years and silently return a Monday in the
+  // following year.
+  assert.equal(parsePeriod("2026-W53", NOW).start.toISOString().slice(0, 10), "2026-12-28");
+  assert.throws(() => parsePeriod("2027-W53", NOW), RangeError);
+});
+
+test("bucketKey matches ISO week numbering across year boundaries", () => {
+  // Expectations from Python's datetime.date.isocalendar().
+  const cases = [
+    ["2026-06-23", "2026-W26"],
+    ["2024-12-30", "2025-W01"],
+    ["2025-12-29", "2026-W01"],
+    ["2021-01-01", "2020-W53"],
+    ["2016-01-03", "2015-W53"],
+    ["2016-12-31", "2016-W52"],
+    ["2019-12-30", "2020-W01"],
+  ];
+  for (const [date, expected] of cases) {
+    assert.equal(bucketKey(new Date(`${date}T00:00:00Z`), "week"), expected, date);
   }
 });
 
