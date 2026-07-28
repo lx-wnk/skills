@@ -2,5 +2,9 @@ node_modules/
 outputs/
 HANDOFF-PROMPT.md
 obsidian-workspace/
-.claude/scheduled_tasks.lock
+.claude/
 docs/superpowers/plans/
+
+# Local environment
+.env
+.env.*
