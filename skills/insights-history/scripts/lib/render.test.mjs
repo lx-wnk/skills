@@ -12,7 +12,6 @@ const BUCKETS = [
     outputTokens: 6824000,
     toolCounts: { Bash: 764, Agent: 242 },
     toolErrors: 74,
-    interruptions: 6,
     projects: { "/repo/a": 3 },
     outcomes: { fully_achieved: 5 },
     helpfulness: { very_helpful: 5 },
@@ -29,7 +28,6 @@ const BUCKETS = [
     outputTokens: 5394000,
     toolCounts: { Bash: 690, Agent: 158 },
     toolErrors: 50,
-    interruptions: 6,
     projects: { "/repo/b": 5 },
     outcomes: { mostly_achieved: 3 },
     helpfulness: { very_helpful: 3 },
@@ -80,6 +78,13 @@ test("renderReport includes every bucket and its normalised figures", () => {
   assert.ok(html.includes("2026-W27"));
   assert.ok(html.includes("38.3"));
   assert.ok(html.includes("13.4"));
+});
+
+test("renderReport shows no column the data cannot back", () => {
+  const html = render();
+  // user_interruptions is not derived by extractMeta, so an Interruptions
+  // column would print a confident zero for every session this skill ingested.
+  assert.ok(!html.includes("Interruptions"), "a column with no data behind it is rendered");
 });
 
 test("renderReport supports both colour schemes", () => {

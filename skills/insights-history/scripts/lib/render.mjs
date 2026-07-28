@@ -37,16 +37,19 @@ function topEntries(record, limit = 3) {
     .slice(0, limit);
 }
 
+// No Interruptions column: extractMeta does not derive user_interruptions, so
+// for every session this skill ingested the figure would be a confident zero
+// rather than a measurement. An absent column is honest; a zeroed one is not.
 function absoluteTable(buckets) {
   const rows = buckets
     .map(
       (b) =>
         `<tr><td>${escapeHtml(b.key)}</td><td>${b.sessions}</td><td>${b.activeDays}</td>` +
         `<td>${b.userMessages}</td><td>${b.commits}</td><td>${Math.round(b.outputTokens / 1000)}k</td>` +
-        `<td>${b.toolErrors}</td><td>${b.interruptions}</td></tr>`,
+        `<td>${b.toolErrors}</td></tr>`,
     )
     .join("");
-  return `<div class="wrap"><table><thead><tr><th>Bucket</th><th>Sessions</th><th>Active days</th><th>User msgs</th><th>Commits</th><th>Output</th><th>Tool errors</th><th>Interruptions</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  return `<div class="wrap"><table><thead><tr><th>Bucket</th><th>Sessions</th><th>Active days</th><th>User msgs</th><th>Commits</th><th>Output</th><th>Tool errors</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 function normalisedTable(buckets) {

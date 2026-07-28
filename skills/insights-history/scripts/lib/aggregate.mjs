@@ -64,9 +64,10 @@ function emptyBucket(key) {
     outputTokens: 0,
     toolCounts: {},
     toolErrors: 0,
+    // No linesAdded/linesRemoved: extractMeta does not derive them, so summing
+    // them over sessions this skill ingested would produce a confident zero
+    // rather than a measurement.
     interruptions: 0,
-    linesAdded: 0,
-    linesRemoved: 0,
     projects: {},
     outcomes: {},
     helpfulness: {},
@@ -103,8 +104,6 @@ export function aggregate(sessions, facets, { granularity }) {
     bucket.outputTokens += meta.output_tokens ?? 0;
     bucket.toolErrors += meta.tool_errors ?? 0;
     bucket.interruptions += meta.user_interruptions ?? 0;
-    bucket.linesAdded += meta.lines_added ?? 0;
-    bucket.linesRemoved += meta.lines_removed ?? 0;
 
     for (const [name, count] of Object.entries(meta.tool_counts ?? {})) tally(bucket.toolCounts, name, count);
     if (meta.project_path) tally(bucket.projects, meta.project_path);

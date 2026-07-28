@@ -15,9 +15,6 @@ function session(overrides) {
     input_tokens: 100,
     output_tokens: 1000,
     tool_errors: 1,
-    user_interruptions: 0,
-    lines_added: 10,
-    lines_removed: 2,
     files_modified: 3,
     ...overrides,
   };
@@ -95,6 +92,14 @@ test("aggregate reports friction keys outside the known vocabulary", () => {
   const { buckets } = aggregate([session({ session_id: "a" })], facets, { granularity: "week" });
   assert.deepEqual(buckets[0].friction, { buggy_code: 2, agent_stall: 3 });
   assert.deepEqual(buckets[0].frictionUnknown, { agent_stall: 3 });
+});
+
+test("aggregate carries no accumulator for fields extractMeta cannot derive", () => {
+  const { buckets } = aggregate([session({ session_id: "a" })], new Map(), { granularity: "week" });
+  // Summing lines_added over sessions this skill ingested would always yield
+  // zero, which reads as a measurement rather than an absence.
+  assert.ok(!("linesAdded" in buckets[0]));
+  assert.ok(!("linesRemoved" in buckets[0]));
 });
 
 test("delta reports signed absolute and percentage change", () => {
