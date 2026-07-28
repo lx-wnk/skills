@@ -95,10 +95,11 @@ Never have a skill silently switch from read-only to write based on inference �
 
 Skills that emit a deliverable file:
 
-- Write to `outputs/<filename>` (e.g. `outputs/Findings.md`).
-- Create the directory with `mkdir -p outputs` rather than failing if it doesn't exist.
+- Write to `outputs/<filename>` (e.g. `outputs/Findings.md`), or `outputs/<group>/<filename>` for skills that group related outputs in a subdirectory (e.g. `outputs/handoffs/latest.md`).
+- Create the directory with `mkdir -p outputs` (or `mkdir -p outputs/<group>`) rather than failing if it doesn't exist.
 - The repository's `.gitignore` is responsible for ignoring `outputs/` — a skill must not modify `.gitignore` itself.
 - If the file already exists: default to **appending a new dated section** above the existing content. Only ask the user before overwriting.
+- For handoff-style outputs where a single current file must stay at a stable path (e.g. `latest.md`): **rotate** the previous file to a dated, topic-named archive instead of appending or overwriting. Never overwrite — escalate the archive filename (`-2`, `-3`, …) on collision. See `session-handoff` as the reference implementation.
 
 For schema-driven outputs (e.g. `Findings.md`):
 
@@ -117,7 +118,7 @@ Skills routinely call each other. Conventions:
 
 Avoid making a skill depend on inspecting opaque agent metadata (e.g. system-reminder contents) — those formats change.
 
-## 8. External Tool Probes
+## 8. External Tool & Command Probes
 
 If a skill optionally invokes external CLIs (linters, scanners):
 
@@ -125,6 +126,15 @@ If a skill optionally invokes external CLIs (linters, scanners):
 - For tools that need configuration (eslint, phpstan, semgrep, etc.) also check for the relevant config file (`.eslintrc*`, `phpstan.neon`, `.semgrep.yml`) before running. Running an unconfigured linter produces noise.
 - Treat the probe list as **examples, not exhaustive**. Document that users can extend it.
 - Cap parallel agent fan-out: if more than 5 tools/skills are discovered, ask the user before spawning all of them in parallel.
+
+### Soft dependencies on non-vendored built-in commands
+
+A skill may optionally invoke a host built-in command that is **not vendored in this repo** (e.g. `/simplify`, `/code-review`). Availability varies by harness and version, so a hard dependency breaks where the built-in is absent.
+
+- **Feature-detect before invoke.** Never assume the built-in exists. Check the environment's available commands/skills (delegate to the dispatcher; do not parse opaque agent metadata — cf. §7).
+- **Graceful skip, never hard-fail.** Missing built-in → skip that step, continue the rest of the skill.
+- **Report transparency.** Always log the skip and its reason where the skill reports (e.g. one line in `Findings.md`), so a skipped step is never mistaken for "done".
+- **Reference example:** `/simplify` in `branch-review --apply-fixes` — invoked when available, skipped with a summary line when not.
 
 ## 9. Commit and Push Behavior
 

@@ -7,7 +7,7 @@ description: >-
 
 user-invocable: true
 argument-hint: "[focus topics or time hint, e.g. 'Focus: Auth refactoring' or 'since Monday']"
-allowed-tools: "Bash(git *) Bash(date *) Bash(basename *) Bash(mkdir *) Bash(mv *) Read Write Edit"
+allowed-tools: "Bash(git *) Bash(date *) Bash(basename *) Bash(mkdir *) Bash(mv *) Bash(test *) Bash(ls *) Read Write Edit"
 ---
 
 # Session Handoff
@@ -92,7 +92,13 @@ mkdir -p outputs/handoffs
 **One-time legacy migration:** if a legacy `outputs/HANDOFF.md` exists and there is no `outputs/handoffs/latest.md` yet, move it once so nothing is lost. Use the leading `YYYY-MM-DD` date from the legacy file's top `# Session Handoff — {DATE_UTC}` header if present (drop the time), else today's UTC date. If the target already exists, suffix `-2`, `-3`, … — never overwrite:
 
 ```bash
-mv outputs/HANDOFF.md "outputs/handoffs/<legacy-date>-legacy.md"
+target="outputs/handoffs/${LEGACY_DATE}-legacy.md"
+n=2
+while [ -e "$target" ]; do
+  target="outputs/handoffs/${LEGACY_DATE}-legacy-${n}.md"
+  n=$((n + 1))
+done
+mv outputs/HANDOFF.md "$target"
 ```
 
 **Determine the topic slug** (precedence, first match wins):
@@ -106,9 +112,12 @@ Slugify: lowercase, kebab-case, ASCII only, collapse spaces/underscores to `-`, 
 **Rotate the existing latest** — if `outputs/handoffs/latest.md` exists:
 
 1. Read its YAML frontmatter → `handoff-date` and `handoff-slug`.
-   - Fallback when the frontmatter is missing or corrupt: parse the leading `YYYY-MM-DD` date out of the `# Session Handoff — {DATE_UTC}` header line (drop the time) and use the slug `session`.
+   - Fallback when the frontmatter is missing or corrupt: parse the leading `YYYY-MM-DD` date out of the first H1 line (`# ... — {DATE_UTC}`, regardless of wording/language) and drop the time. Use the slug `session`. Else, if no date can be parsed, use today's UTC date.
 2. Compute the archive target `outputs/handoffs/{handoff-date}-{handoff-slug}.md`. If that file already exists, append `-2`, `-3`, … until the name is free. **Never overwrite** — a lost handoff is expensive.
-3. `mv outputs/handoffs/latest.md <target>`.
+3. Compute `$target` with the same escalation as above (`while [ -e "$target" ]`, appending `-2`, `-3`, …), then:
+   ```bash
+   mv outputs/handoffs/latest.md "$target"
+   ```
 
 If no `latest.md` exists yet, skip rotation (this is the first handoff).
 

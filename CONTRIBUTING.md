@@ -55,7 +55,7 @@ npm run prettier:fix  # format
 
 Commit the regenerated `skills.json`. `npm run sync:check` is the CI gate — it fails on the same validation errors above.
 
-When you add or rename a skill, also update the `## Available Skills` tables in [README.md](README.md) — add the row to the matching category group, alphabetical within the group (see [STYLEGUIDE §12](STYLEGUIDE.md#12-readme)); the `Invoke` column must match the `argument-hint`.
+When you add or rename a skill, also update the `## Available Skills` tables in [README.md](README.md) per [STYLEGUIDE §12](STYLEGUIDE.md#12-readme).
 
 ## Conventions
 
