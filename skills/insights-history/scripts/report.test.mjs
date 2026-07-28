@@ -25,7 +25,6 @@ async function withData() {
     input_tokens: 10,
     output_tokens: 100,
     tool_errors: 0,
-    user_interruptions: 0,
     project_path: "/repo",
   };
   await writeJsonAtomic(join(data, "session-meta", "a.json"), {
@@ -145,6 +144,42 @@ test("report injects a frozen narrative from --narrative", async () => {
   const html = await readFile(join(data, "reports", "latest.html"), "utf8");
   assert.ok(html.includes("Frozen summary text."));
   assert.ok(html.includes("Frozen delta text."));
+});
+
+test("an unknown --by value exits 2 instead of silently bucketing by week", async () => {
+  const data = await withData();
+  await assert.rejects(
+    () => report(data, ["--by", "day"]),
+    (error) => {
+      assert.equal(error.code, 2);
+      assert.equal(error.stdout, "");
+      assert.match(error.stderr, /week and month/);
+      return true;
+    },
+  );
+  await assert.rejects(() => readdir(join(data, "reports")));
+});
+
+test("--by week and --by month are both accepted", async () => {
+  const data = await withData();
+  for (const value of ["week", "month"]) {
+    const { stdout } = await report(data, ["--by", value]);
+    assert.match(stdout, /"sessions":2/);
+  }
+});
+
+test("an unreadable --narrative exits 2 instead of rendering empty prose", async () => {
+  const data = await withData();
+  await assert.rejects(
+    () => report(data, ["--narrative", join(data, "typo.json")]),
+    (error) => {
+      assert.equal(error.code, 2);
+      assert.equal(error.stdout, "");
+      assert.match(error.stderr, /--narrative/);
+      return true;
+    },
+  );
+  await assert.rejects(() => readdir(join(data, "reports")));
 });
 
 test("report emits a comparison block for --compare", async () => {

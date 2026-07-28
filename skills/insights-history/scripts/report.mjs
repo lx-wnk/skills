@@ -79,7 +79,16 @@ if (start > end) {
   process.exit(2);
 }
 
-const granularity = flag(argv, "--by") ?? autoGranularity(start, end);
+// An unrecognised --by must not fall through to the automatic granularity:
+// "--by day" would then silently produce weekly buckets and the report would
+// answer a question the user did not ask.
+const GRANULARITIES = ["week", "month"];
+const byFlag = flag(argv, "--by");
+if (argv.includes("--by") && !GRANULARITIES.includes(byFlag)) {
+  process.stderr.write(`unknown --by value "${byFlag ?? ""}" — valid values are ${GRANULARITIES.join(" and ")}\n`);
+  process.exit(2);
+}
+const granularity = byFlag ?? autoGranularity(start, end);
 // parsePeriod returns an inclusive end (last millisecond of the final day),
 // so no day-padding is needed here.
 const inRange = metas.filter((meta) => {
@@ -109,8 +118,27 @@ if (comparison) {
   comparisonSummary = { before, after, change: delta(before, after) };
 }
 
+// A narrative that cannot be read is a failure, not empty prose: the caller
+// asked for specific text and a report without it looks complete but isn't.
+// Omitting the flag entirely stays fine — that is the deterministic path.
 const narrativePath = flag(argv, "--narrative");
-const narrative = (narrativePath ? await readJson(narrativePath) : null) ?? { summary: "", delta: "" };
+let narrative = { summary: "", delta: "" };
+if (argv.includes("--narrative")) {
+  let loaded = null;
+  try {
+    loaded = narrativePath ? await readJson(narrativePath) : null;
+  } catch (error) {
+    process.stderr.write(`cannot read --narrative ${narrativePath}: ${error.message}\n`);
+    process.exit(2);
+  }
+  if (!loaded) {
+    process.stderr.write(
+      `cannot read --narrative ${narrativePath ?? "(no path given)"} — expected a readable JSON file\n`,
+    );
+    process.exit(2);
+  }
+  narrative = loaded;
+}
 
 const range = { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
 const html = renderReport({ buckets, totals, range, granularity, narrative, comparison: comparisonSummary });
