@@ -6,46 +6,58 @@
 
 ## session-meta field list
 
-Written by `Gjs()` in the built-in, and by `lib/transcript.mjs` `extractMeta` in this skill — field-for-field, confirmed identical on real data (see `references/parity-harness.md`).
+Written by `Gjs()` in the built-in. `lib/transcript.mjs` `extractMeta` writes the same shape for the subset of fields it can actually derive from a transcript — that subset is declared explicitly as `DERIVED_META_FIELDS` in `lib/transcript.mjs`, and the **Derived here?** column below says which fields it covers. Parity of the derived fields against the built-in is measured in `references/parity-harness.md`.
 
-| Field | Type | Meaning |
-| --- | --- | --- |
-| `session_id` | string | matches the transcript filename |
-| `project_path` | string | cwd at session start, `-`-encoded directory becomes `/`-joined |
-| `start_time` | ISO 8601 string | timestamp of the first parsed line |
-| `duration_minutes` | integer | last timestamp minus first, in minutes |
-| `user_message_count` | integer | count of user-authored (non-tool-result) messages |
-| `assistant_message_count` | integer | count of assistant turns |
-| `tool_counts` | object<string,int> | per-tool-name invocation counts |
-| `languages` | object<string,int> | file-extension-derived language counts for edited/written files |
-| `git_commits` | integer | count of Bash invocations matching `git commit` |
-| `git_pushes` | integer | count of Bash invocations matching `git push` |
-| `input_tokens` | integer | summed `usage.input_tokens` across assistant turns |
-| `output_tokens` | integer | summed `usage.output_tokens` across assistant turns |
-| `first_prompt` | string | first 200 chars of the first user message |
-| `user_interruptions` | integer | user messages sent while Claude was mid-response |
-| `user_response_times` | number[] | seconds between an assistant turn and the next user message |
-| `tool_errors` | integer | count of `tool_result` blocks with `is_error: true` |
-| `tool_error_categories` | object<string,int> | `tool_errors`, classified — see below |
-| `uses_task_agent` | boolean | any `Agent`/`Task` tool call present |
-| `uses_mcp` | boolean | any tool name starting `mcp__` |
-| `uses_web_search` | boolean | any `WebSearch` call |
-| `uses_web_fetch` | boolean | any `WebFetch` call |
-| `lines_added` / `lines_removed` | integer | reserved counters, populated by native diff accounting |
-| `files_modified` | integer | count of edit/write tool calls whose input carries a recognised extension |
-| `message_hours` | int[] | local hour-of-day of each user message, for time-of-day analysis |
-| `user_message_timestamps` | ISO 8601 string[] | one per user message |
-| `transcript_mtime` | integer (ms epoch) | source transcript's mtime at write time — the idempotency/staleness key |
+Both programs write into the same `~/.claude/usage-data/session-meta/` directory, so `ingest.mjs` merges into an existing entry (`{ ...existing, ...meta }`) rather than replacing it: a field this skill does not derive keeps whatever `/insights` put there. That merge is load-bearing, not defensive — our write also stamps a fresh `transcript_mtime`, which is the staleness key both programs use, so any field zeroed here would be treated as current and never recomputed by either side.
+
+| Field | Type | Meaning | Derived here? |
+| --- | --- | --- | --- |
+| `session_id` | string | matches the transcript filename | yes |
+| `project_path` | string | cwd at session start | yes — see below |
+| `start_time` | ISO 8601 string | timestamp of the first parsed line | yes |
+| `duration_minutes` | integer | last timestamp minus first, in minutes | yes |
+| `user_message_count` | integer | count of user-authored (non-tool-result) messages | yes |
+| `assistant_message_count` | integer | count of assistant turns | yes |
+| `tool_counts` | object<string,int> | per-tool-name invocation counts | yes |
+| `languages` | object<string,int> | file-extension-derived language counts for edited/written files | yes |
+| `git_commits` | integer | count of Bash invocations matching `git commit` | yes |
+| `git_pushes` | integer | count of Bash invocations matching `git push` | yes |
+| `input_tokens` | integer | summed `usage.input_tokens` across assistant turns | yes |
+| `output_tokens` | integer | summed `usage.output_tokens` across assistant turns | yes |
+| `first_prompt` | string | first 200 chars of the first user message | yes |
+| `user_interruptions` | integer | user messages sent while Claude was mid-response | no — see below |
+| `user_response_times` | number[] | seconds between an assistant turn and the next user message | yes |
+| `tool_errors` | integer | count of `tool_result` blocks with `is_error: true` | yes |
+| `tool_error_categories` | object<string,int> | `tool_errors`, classified — see below | yes |
+| `uses_task_agent` | boolean | any `Agent`/`Task` tool call present | yes |
+| `uses_mcp` | boolean | any tool name starting `mcp__` | yes |
+| `uses_web_search` | boolean | any `WebSearch` call | yes |
+| `uses_web_fetch` | boolean | any `WebFetch` call | yes |
+| `lines_added` / `lines_removed` | integer | reserved counters, populated by native diff accounting | no — see below |
+| `files_modified` | integer | count of edit/write tool calls whose input carries a recognised extension | yes |
+| `message_hours` | int[] | local hour-of-day of each user message, for time-of-day analysis | yes |
+| `user_message_timestamps` | ISO 8601 string[] | one per user message | yes |
+| `transcript_mtime` | integer (ms epoch) | source transcript's mtime at write time — the idempotency/staleness key | yes |
 
 No `session_type` field lives on session-meta — that only appears on the facet object, described next.
 
+### Fields this skill deliberately does not write
+
+`user_interruptions`, `lines_added` and `lines_removed` are absent from `DERIVED_META_FIELDS` and are not emitted by `extractMeta`. There is no signal in a transcript from which this skill can compute them: interruptions are a UI event the transcript does not mark, and line counts come from the built-in's native diff accounting, not from the tool-call record. Emitting them as `0` would have been worse than omitting them — the merge in `ingest.mjs` would have carried our zero over the built-in's real value, and the fresh `transcript_mtime` would have made that zero look freshly computed. They are therefore left entirely to `/insights`, preserved on merge, and not surfaced in the report (see `SKILL.md` § Output format).
+
+### `project_path` is read from the transcript, not decoded from the directory name
+
+The built-in derives `project_path` from the `~/.claude/projects/<encoded>/` directory name. That encoding replaces both `/` and `-` with `-`, so it is **not invertible**: `_agent-infrastructure` and `_agent/infrastructure` encode identically, and decoding turns the former into the latter. `ingest.mjs` therefore takes the value in this order: the `cwd` from the hook payload, then the first `cwd` field found among the transcript's own lines (every line carries one), and only if neither exists, the encoded directory name **verbatim and undecoded**. Backfill passes no payload `cwd`, so the transcript-derived value is the one every backfilled session gets.
+
 ## Facet object shape
 
-Written by `vLy()` (per-session LLM extraction, prompt `pLy`, 4096 max tokens) in the built-in; written by the skill's enrichment step under the same schema so `/insights` can reuse what this skill pays for and vice versa. Real sample, unmodified:
+Written by `vLy()` (per-session LLM extraction, prompt `pLy`, 4096 max tokens) in the built-in; written by the skill's enrichment step under the same schema so `/insights` can reuse what this skill pays for and vice versa.
+
+The example below reproduces the **structure** of a real facet exactly — every field name, type and enum-ish value is as observed. The free-text fields (`underlying_goal`, `brief_summary`) and the `session_id` are synthetic placeholders: session identifiers and session prose are user data, and this repository is public, so no real value of either is committed here.
 
 ```json
 {
-  "underlying_goal": "The user wanted a comparative research overview of AI agent memory engines ...",
+  "underlying_goal": "PLACEHOLDER — the model's one-sentence restatement of what the user was trying to achieve.",
   "goal_categories": { "research_and_comparison": 1 },
   "outcome": "fully_achieved",
   "user_satisfaction_counts": {},
@@ -54,8 +66,8 @@ Written by `vLy()` (per-session LLM extraction, prompt `pLy`, 4096 max tokens) i
   "friction_counts": {},
   "friction_detail": "",
   "primary_success": "fast_accurate_search",
-  "brief_summary": "User asked for a comparison of nine-plus memory engines; Claude ran parallel research agents, delivered a structured comparison table with recommendations, and persisted the results to Obsidian.",
-  "session_id": "cd4bc50a-70f5-4560-84c2-0c93af5c62d4"
+  "brief_summary": "PLACEHOLDER — two or three sentences describing what happened in the session and how it ended.",
+  "session_id": "00000000-0000-0000-0000-000000000001"
 }
 ```
 

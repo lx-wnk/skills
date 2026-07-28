@@ -172,7 +172,7 @@ Deterministic. No LLM. Reads `session-meta/` and `facets/`, writes HTML.
 
 Header with headline figures, then per bucket:
 
-- **Absolute** — sessions, active days, commits, tokens, tool counts, interruptions, errors.
+- **Absolute** — sessions, active days, user messages, commits, tokens, tool errors. (Interruptions were listed here during design but are not shipped: `extractMeta` cannot derive `user_interruptions` from a transcript, so the column would have been a constant zero. See `SKILL.md` § Output format.)
 - **Normalised** — per session and per commit. This is the more informative view: in the author's data, week W30 looked like a collapse in absolute terms (commits 85 → 46, tokens halved) while normalised figures and outcomes showed it as the best week of the range.
 - **Quality** — outcomes, helpfulness, friction, on canonical enums.
 - **Project mix** — shift over time.

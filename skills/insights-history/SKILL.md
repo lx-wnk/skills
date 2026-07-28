@@ -58,14 +58,18 @@ No arguments: full range, all sessions ever ingested. `--compare A vs B` additio
 
 Period tokens, accepted identically by `--since`, `--until`, and both sides of `--compare`:
 
-| Token                  | Example      | Resolves to                     |
-| ---------------------- | ------------ | ------------------------------- |
-| `YYYY-MM-DD`           | `2026-06-01` | that day, 00:00 local           |
-| `YYYY-MM`              | `2026-06`    | that calendar month             |
-| `YYYY-Www`             | `2026-W26`   | that ISO week                   |
-| `<N>d`, `<N>w`, `<N>m` | `90d`        | relative to now — `--last` only |
+| Token                  | Example      | Resolves to                      |
+| ---------------------- | ------------ | -------------------------------- |
+| `YYYY-MM-DD`           | `2026-06-01` | that day, 00:00–23:59:59.999 UTC |
+| `YYYY-MM`              | `2026-06`    | that calendar month, UTC         |
+| `YYYY-Www`             | `2026-W26`   | that ISO week, UTC               |
+| `<N>d`, `<N>w`, `<N>m` | `90d`        | relative to now — `--last` only  |
 
-Ranges are inclusive at both ends. An unparsable token is a hard error naming the accepted forms (exit 2, message on stderr) — never a silent fallback to the full range, which would produce a plausible-looking but wrong report. An empty data root (nothing ingested yet) exits 1 with a message telling the user to run the backfill first.
+**Every period token and every bucket boundary is resolved in UTC** (`lib/range.mjs` uses `Date.UTC` throughout; there is no local-time path). This is not the same convention as the `message_hours` field, which deliberately stores the user's local hour-of-day so time-of-day analysis reads correctly — ranges are UTC, hour-of-day is local, and the two are independent by design.
+
+Ranges are inclusive at both ends. Absolute tokens are validated against the calendar, not just the shape: a month outside 1–12, a day the month does not have, an ISO week the year does not have (`2027-W53`), or a year below 1000 (`Date.UTC` would silently remap `0099` to 1999) is rejected. An unparsable or impossible token is a hard error naming the accepted forms (exit 2, message on stderr) — never a silent fallback to the full range, which would produce a plausible-looking but wrong report. An empty data root (nothing ingested yet) exits 1 with a message telling the user to run the backfill first.
+
+`--by` accepts only `week` and `month`. Any other value exits 2 naming the two valid ones — it does **not** fall through to the automatic granularity, because `--by day` quietly producing weekly buckets would answer a question the user did not ask. `--narrative` is optional, but if it is given and the file cannot be read (wrong path, unreadable, not JSON) that is also exit 2 rather than a report rendered with empty prose.
 
 ## Workflow
 
@@ -94,6 +98,10 @@ node skills/insights-history/scripts/ingest.mjs --backfill
 ```
 
 Always run this first, even if the hook is installed — it catches anything the hook missed (crash, hook disabled, a Claude Code upgrade, another machine). Idempotent: sessions already up to date are skipped by comparing `transcript_mtime`.
+
+It prints a JSON summary `{written, upToDate, skipped, failed}` on stdout and **exits 1 if `failed` is greater than 0**, so a backfill in which every transcript failed cannot be mistaken for one in which nothing needed doing. The summary is printed either way — read `failed` and, if it is non-zero, `~/.claude/usage-data/ingest.log` for the reason. The `SessionEnd` hook path is different and deliberately so: it always exits 0, because a telemetry hook must never interrupt the user's session.
+
+Ingest **merges into** an existing `session-meta/<id>.json` rather than replacing it. That directory is shared with the built-in `/insights`, which writes fields this skill cannot derive from a transcript (`user_interruptions`, `lines_added`, `lines_removed`); those are carried forward untouched. See `references/builtin-schema.md` § "Fields this skill deliberately does not write".
 
 ### Step 2 — identify missing facets
 
@@ -131,7 +139,9 @@ Two outputs per run:
 {"sessions": <int>, "missingFacets": [<session_id>, ...], "comparison": <object|null>}
 ```
 
-`comparison` is `null` unless `--compare` was given, in which case it is `{ before, after, change }` with `change` carrying signed absolute and percentage deltas per metric. Exit codes: `0` on success, `1` when the data root has no session metadata at all (nothing ingested yet), `2` for any unparsable period token or an inverted range (`--since` after `--until`).
+`comparison` is `null` unless `--compare` was given, in which case it is `{ before, after, change }` with `change` carrying signed absolute and percentage deltas per metric. Exit codes: `0` on success, `1` when the data root has no session metadata at all (nothing ingested yet), `2` for any unparsable or calendar-impossible period token, an inverted range (`--since` after `--until`), an unknown `--by` value, or a `--narrative` file that cannot be read. On any exit-2 path nothing is written to stdout and no report file is produced.
+
+The report's Absolute table shows sessions, active days, user messages, commits, output tokens and tool errors. It deliberately has **no Interruptions column and no lines-added/removed figures**: `extractMeta` cannot derive those from a transcript, so for every session this skill ingested they would render as a confident zero rather than a measurement. They remain the built-in's to write and are preserved on merge, not displayed here.
 
 ## Enrichment rules
 
@@ -173,7 +183,7 @@ This is a **write skill** (STYLEGUIDE §5). Every path it creates or edits:
 State these plainly to the user whenever they're relevant — they are not fine print.
 
 - **History before the ingest hook is installed cannot be recovered.** Transcript retention deletes the source `.jsonl` files (default `cleanupPeriodDays`: 30), and once a transcript is gone, no amount of re-running ingest brings its data back. Day zero for this skill's archive is the day the hook is installed (or the day `--backfill` first runs against still-present transcripts) — not any earlier.
-- **Metadata parity with the built-in is measured, not perfect.** Currently **0.91** on `user_message_count` and `assistant_message_count`, **0.94** on `tool_counts`, and **0.99** on tool-error counts, measured across 34 comparable real sessions. The known cause — transcripts with resume/compaction history containing abandoned branches that a naive full-file scan over-counts — is documented in detail, including a rejected fix attempt and why it made things worse, in `references/parity-harness.md`. Do not present these numbers as exact; they are a real, currently-measured floor.
+- **Metadata parity with the built-in is measured, not perfect.** Three of the four figures come from the shipped harness (`scripts/parity.mjs`, run 2026-07-28 over the **34** sessions comparable at that time) and are asserted as its `BASELINE` on every run: **0.91** on `user_message_count` (31/34), **0.91** on `assistant_message_count` (31/34), **0.94** on `tool_counts` (32/34). The fourth — **0.99** on tool-error counts (69/70 exact) — has a different basis: it was measured once by an ad-hoc check over a **70**-session population on a different day, and `parity.mjs` neither measures nor asserts it, so nothing re-checks it as the code changes. Do not quote it as one of the harness's numbers. The known cause — transcripts with resume/compaction history containing abandoned branches that a naive full-file scan over-counts — is documented in detail, including a rejected fix attempt and why it made things worse, in `references/parity-harness.md`. Do not present these numbers as exact; they are a real, currently-measured floor.
 - **Friction categories are an unvalidated, model-generated field.** The built-in's own facet validator checks types, not enum membership, so the model is free to invent friction labels beyond the ~13 known ones, and it does — see `references/builtin-schema.md` for the observed vocabulary. The report's **Ad-hoc vocabulary** column in the Quality table shows what share of each bucket's friction events rest on invented (unrecognised) categories, so a reader can judge how much of that column to trust per bucket rather than treating it as uniformly solid.
 
 ## Principles

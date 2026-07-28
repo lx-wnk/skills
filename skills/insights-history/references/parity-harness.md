@@ -1,5 +1,7 @@
 # Parity harness
 
+**Session identifiers in this document are synthetic.** Every `00000001`-style id and `aaaa0001`-style line uuid below is a placeholder standing in for one real session on the author's machine, assigned consistently so the tables still read as a coherent account of one investigation. Session ids are user data and this repository is public; the measurements, structure and reasoning are what matter here, and none of them depend on the real values. The harness itself never writes ids anywhere but the local terminal.
+
 `scripts/parity.mjs` is a diagnostic, not a unit test. It compares our reimplementation of session-metadata extraction (`lib/transcript.mjs` `extractMeta`) against Claude Code's built-in `/insights` cache (`~/.claude/usage-data/session-meta/*.json`), on whatever real sessions happen to be present on the machine it runs on. It is skipped entirely (exit 0) when no built-in cache exists, and reports `INCONCLUSIVE` (exit 0) when fewer than `MIN_POPULATION` (20) sessions are comparable.
 
 ## What it compares
@@ -33,13 +35,13 @@ The population dropped from 70 to 34 between the two measurements — retention 
 
 `BASELINE` in `parity.mjs` is set from the 2026-07-28 run: `{ user_message_count: 0.91, assistant_message_count: 0.91, tool_counts: 0.94 }`. This is a real, currently-measured number, not a target backed into passing — see "Residual" below for what it costs.
 
-Separately, a full ingest of one real 6.3 MB session (`1b96d548`, run outside this harness as part of the overall calibration effort) produced metadata **identical** to the built-in's cache on `user_message_count`, `assistant_message_count`, `git_commits`, `input_tokens`, `output_tokens`, and `tool_counts`. The pipeline is capable of exact parity; the residual here is session-specific, not systemic.
+Separately, a full ingest of one real 6.3 MB session (`00000007`, run outside this harness as part of the overall calibration effort) produced metadata **identical** to the built-in's cache on `user_message_count`, `assistant_message_count`, `git_commits`, `input_tokens`, `output_tokens`, and `tool_counts`. The pipeline is capable of exact parity; the residual here is session-specific, not systemic.
 
 ## Hypotheses tested
 
 ### 1. Transcript branching (leaf-to-root chain walk) — CONFIRMED as root cause
 
-All four sessions that mismatched on 2026-07-28 (`a34e6d3b`, `e312b49e`, `a272ed75`, `cee02856`) have the same structural property: their transcript is not a single linear conversation. Alongside the usual `user` / `assistant` lines, these files contain repeated top-level `last-prompt` entries — one per resume/steer/queue event — each carrying a `leafUuid` that points at the `uuid` of the message that was the tip of the conversation at that moment. Every line also carries `uuid` and `parentUuid`, forming a tree, not a list: old branches (abandoned edits, superseded queued prompts, pre-compaction history) remain in the file as extra, unreachable-from-the-current-tip sibling chains.
+All four sessions that mismatched on 2026-07-28 (`00000001`, `00000002`, `00000003`, `00000004`) have the same structural property: their transcript is not a single linear conversation. Alongside the usual `user` / `assistant` lines, these files contain repeated top-level `last-prompt` entries — one per resume/steer/queue event — each carrying a `leafUuid` that points at the `uuid` of the message that was the tip of the conversation at that moment. Every line also carries `uuid` and `parentUuid`, forming a tree, not a list: old branches (abandoned edits, superseded queued prompts, pre-compaction history) remain in the file as extra, unreachable-from-the-current-tip sibling chains.
 
 `extractMeta` — by design, per the brief, and correctly per its contract — processes every line in the file. The built-in evidently does not: it appears to walk only the chain from the _final_ leaf (the `leafUuid` of the chronologically last `last-prompt` entry) back to the root via `parentUuid`, counting only lines on that ancestry path.
 
@@ -47,16 +49,16 @@ Verification: for each of the four mismatching sessions, a chain was built by ta
 
 | Session    | Metric                      | Full-file (mismatch) | Leaf-chain walk | Cached |
 | ---------- | --------------------------- | -------------------- | --------------- | ------ |
-| `a34e6d3b` | `user_message_count`        | 16                   | **15**          | 15     |
-| `a34e6d3b` | `assistant_message_count`   | 741                  | **643**         | 643    |
-| `a34e6d3b` | `tool_counts.Bash`          | 73                   | **70**          | 70     |
-| `a34e6d3b` | `tool_counts.Read`          | 31                   | **30**          | 30     |
-| `a34e6d3b` | `tool_counts.browser_batch` | 118                  | **90**          | 90     |
-| `e312b49e` | `assistant_message_count`   | 462                  | **459**         | 459    |
-| `e312b49e` | `tool_counts.Bash`          | 31                   | **30**          | 30     |
-| `a272ed75` | `user_message_count`        | 19                   | **18**          | 18     |
-| `a272ed75` | `assistant_message_count`   | 127                  | **125**         | 125    |
-| `cee02856` | `user_message_count`        | 40                   | **38**          | 38     |
+| `00000001` | `user_message_count`        | 16                   | **15**          | 15     |
+| `00000001` | `assistant_message_count`   | 741                  | **643**         | 643    |
+| `00000001` | `tool_counts.Bash`          | 73                   | **70**          | 70     |
+| `00000001` | `tool_counts.Read`          | 31                   | **30**          | 30     |
+| `00000001` | `tool_counts.browser_batch` | 118                  | **90**          | 90     |
+| `00000002` | `assistant_message_count`   | 462                  | **459**         | 459    |
+| `00000002` | `tool_counts.Bash`          | 31                   | **30**          | 30     |
+| `00000003` | `user_message_count`        | 19                   | **18**          | 18     |
+| `00000003` | `assistant_message_count`   | 127                  | **125**         | 125    |
+| `00000004` | `user_message_count`        | 40                   | **38**          | 38     |
 
 Every single one of the ten first-mismatches printed by the harness on 2026-07-28 is explained — and resolved — by this one mechanism. No second or third hypothesis was needed; the brief's timebox ("if that fails, form two more") does not apply because the first hypothesis succeeded outright.
 
@@ -83,19 +85,19 @@ Task 6b took the "not implemented" note above at face value and built it: an `ac
 
 **The hypothesis.** The built-in walks the active `parentUuid` chain leaf-to-root and counts only lines on that chain; our all-lines scan over-counts abandoned branches left behind by resume/edit/compaction events.
 
-**Why it looked right.** On `a34e6d3b` and `e312b49e` — the two sessions used to originally confirm the branching theory — the leaf-to-root walk reproduced the built-in's **full** `tool_counts` object exactly, matching every one of the ten first-mismatches from the 2026-07-28 population (table above). On `a34e6d3b` specifically, only 1325 of the file's 2087 lines lie on that chain — a large, plausible-looking reduction that lined up with the built-in's smaller counts. Two independent verifications, both against real sessions, both exact matches. That was enough to justify implementing it.
+**Why it looked right.** On `00000001` and `00000002` — the two sessions used to originally confirm the branching theory — the leaf-to-root walk reproduced the built-in's **full** `tool_counts` object exactly, matching every one of the ten first-mismatches from the 2026-07-28 population (table above). On `00000001` specifically, only 1325 of the file's 2087 lines lie on that chain — a large, plausible-looking reduction that lined up with the built-in's smaller counts. Two independent verifications, both against real sessions, both exact matches. That was enough to justify implementing it.
 
-**Why it is wrong.** A transcript is not a single-path tree in its active portion either — it fans out mid-turn. When one assistant turn emits several `tool_use` blocks, Claude Code writes each block as its own top-level JSONL line, chained by `parentUuid`, and the `tool_result` for each of those calls is _also_ a direct child of that same parent. A single `parentUuid` walk follows exactly one child at each such fork and silently discards every sibling — live, current tool calls and their results, not superseded edits. This is not rare: a scan of one real session alone counted **202 parents with more than one child**. The two sessions used to validate the hypothesis (`a34e6d3b`, `e312b49e`) apparently didn't expose enough of this fan-out to move their aggregate counts — which is exactly the trap: validating a whole-population claim against two convenient sessions.
+**Why it is wrong.** A transcript is not a single-path tree in its active portion either — it fans out mid-turn. When one assistant turn emits several `tool_use` blocks, Claude Code writes each block as its own top-level JSONL line, chained by `parentUuid`, and the `tool_result` for each of those calls is _also_ a direct child of that same parent. A single `parentUuid` walk follows exactly one child at each such fork and silently discards every sibling — live, current tool calls and their results, not superseded edits. This is not rare: a scan of one real session alone counted **202 parents with more than one child**. The two sessions used to validate the hypothesis (`00000001`, `00000002`) apparently didn't expose enough of this fan-out to move their aggregate counts — which is exactly the trap: validating a whole-population claim against two convenient sessions.
 
 **The measured consequence.** Applying the chain walk across the full 34-session comparable population moved:
 
 - `assistant_message_count`: 0.91 → 0.59 (31/34 → 20/34)
 - `tool_counts`: 0.94 → 0.68 (32/34 → 23/34)
-- `user_message_count`: 0.91 → 0.91 (31/34 → 31/34, unchanged only by coincidence — two sessions it fixed via genuine abandoned-branch removal, `a272ed75` and `cee02856`, were offset by two new failures from the fan-out defect, `136a329f` and `4BA93539`)
+- `user_message_count`: 0.91 → 0.91 (31/34 → 31/34, unchanged only by coincidence — two sessions it fixed via genuine abandoned-branch removal, `00000003` and `00000004`, were offset by two new failures from the fan-out defect, `00000005` and `00000006`)
 
 Both regressed metrics are well past the "stop and report" threshold set for this task; the change was reverted in full before it reached a commit.
 
-**Concrete evidence.** In real session `03e0bf4e-1874-4a82-8d1c-ab84830f0d16`: line 752 is an assistant line (`uuid=78b3e46d`, a `WebFetch` `tool_use`). It has two children — line 753 (`uuid=98db9934`, a `Bash` `tool_use`, same `message.id` as line 752, i.e. the _same_ logical turn's second tool call) and line 764 (`uuid=002f5e6e`, the `tool_result` for the WebFetch call). The leaf-to-root walk reaches `78b3e46d` and continues down the branch toward line 764, but never visits line 753 or its own descendants — dropping a real, live `Bash` call from the count. Multiplied across every parallel-tool-call turn in the file, this produced mismatches like `Bash: 108 vs 109` and `assistant_message_count: 459 vs 460` on this session alone.
+**Concrete evidence.** In real session `00000000-0000-0000-0000-000000000008`: line 752 is an assistant line (`uuid=aaaa0001`, a `WebFetch` `tool_use`). It has two children — line 753 (`uuid=aaaa0002`, a `Bash` `tool_use`, same `message.id` as line 752, i.e. the _same_ logical turn's second tool call) and line 764 (`uuid=aaaa0003`, the `tool_result` for the WebFetch call). The leaf-to-root walk reaches `aaaa0001` and continues down the branch toward line 764, but never visits line 753 or its own descendants — dropping a real, live `Bash` call from the count. Multiplied across every parallel-tool-call turn in the file, this produced mismatches like `Bash: 108 vs 109` and `assistant_message_count: 459 vs 460` on this session alone.
 
 **Status of the real rule.** The built-in's actual counting algorithm remains unknown. Both the "count everything" baseline (0.91/0.91/0.94) and the "leaf-to-root chain" hypothesis (rejected here) are empirical guesses reverse-engineered from a handful of sessions, not confirmed against Claude Code's own source. Any future attempt at closing this residual **must be measured across the full comparable population** (currently n=34 via `parity.mjs`), never validated on only one or two sessions before being treated as confirmed — that is precisely how the rejected hypothesis survived long enough to be implemented and only caught at population scale.
 
