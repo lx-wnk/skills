@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-import { appendFile, mkdir, stat } from "node:fs/promises";
+import { appendFile, mkdir, readdir, stat } from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import { createInterface } from "node:readline";
 import { basename, join, sep } from "node:path";
+import { homedir } from "node:os";
 import { gzipSync } from "node:zlib";
 import { paths, usageDataRoot, writeBufferAtomic, writeJsonAtomic, readJson } from "./lib/store.mjs";
 import { extractMeta, extractSlim } from "./lib/transcript.mjs";
@@ -83,11 +84,52 @@ async function logFailure(root, error) {
   }
 }
 
+async function topLevelTranscripts(projectsDir) {
+  const found = [];
+  let entries;
+  try {
+    entries = await readdir(projectsDir, { withFileTypes: true });
+  } catch {
+    return found;
+  }
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const projectDir = join(projectsDir, entry.name);
+    const files = await readdir(projectDir, { withFileTypes: true }).catch(() => []);
+    for (const file of files) {
+      if (file.isFile() && file.name.endsWith(".jsonl")) found.push(join(projectDir, file.name));
+    }
+  }
+  return found;
+}
+
+async function backfill(root, projectsDir) {
+  const summary = { written: 0, upToDate: 0, skipped: 0, failed: 0 };
+  for (const transcript of await topLevelTranscripts(projectsDir)) {
+    try {
+      const outcome = await ingestOne(transcript, { root });
+      if (outcome === "written") summary.written += 1;
+      else if (outcome === "up-to-date") summary.upToDate += 1;
+      else summary.skipped += 1;
+    } catch (error) {
+      summary.failed += 1;
+      await logFailure(root, error);
+    }
+  }
+  process.stdout.write(`${JSON.stringify(summary)}\n`);
+}
+
 async function main() {
   const root = usageDataRoot();
+  const argv = process.argv.slice(2);
   try {
-    const raw = await readStdin();
-    const payload = JSON.parse(raw);
+    if (argv.includes("--backfill")) {
+      const flagIndex = argv.indexOf("--projects");
+      const projectsDir = flagIndex >= 0 ? argv[flagIndex + 1] : join(homedir(), ".claude", "projects");
+      await backfill(root, projectsDir);
+      return;
+    }
+    const payload = JSON.parse(await readStdin());
     if (!payload.transcript_path) throw new Error("payload has no transcript_path");
     await ingestOne(payload.transcript_path, {
       sessionId: payload.session_id,
@@ -99,8 +141,8 @@ async function main() {
   }
 }
 
-const guard = setTimeout(() => process.exit(0), SELF_TIMEOUT_MS);
-guard.unref();
-
+if (!process.argv.slice(2).includes("--backfill")) {
+  setTimeout(() => process.exit(0), SELF_TIMEOUT_MS).unref();
+}
 await main();
 process.exit(0);

@@ -122,3 +122,32 @@ test("hook mode exits 0 when the transcript is missing", async () => {
   const { stderr } = await ingest(data, payload("/nowhere/missing.jsonl"));
   assert.equal(stderr, "");
 });
+
+test("backfill walks every top-level transcript", async () => {
+  const { dir, data, transcript } = await scenario();
+  const second = join(dirname(transcript), "s2.jsonl");
+  await copyFile(transcript, second);
+  const sub = join(dirname(transcript), "subagents", "agent-y.jsonl");
+  await mkdir(dirname(sub), { recursive: true });
+  await copyFile(transcript, sub);
+
+  const { stdout } = await run("node", [INGEST, "--backfill", "--projects", join(dir, "projects")], {
+    env: { ...process.env, CLAUDE_USAGE_DATA_DIR: data },
+  });
+
+  const summary = JSON.parse(stdout.trim());
+  assert.equal(summary.written, 2);
+  assert.equal(summary.failed, 0);
+  assert.deepEqual((await readdir(join(data, "session-meta"))).sort(), ["s1.json", "s2.json"]);
+});
+
+test("backfill reports up-to-date sessions instead of rewriting them", async () => {
+  const { dir, data } = await scenario();
+  const args = [INGEST, "--backfill", "--projects", join(dir, "projects")];
+  const env = { ...process.env, CLAUDE_USAGE_DATA_DIR: data };
+  await run("node", args, { env });
+  const { stdout } = await run("node", args, { env });
+  const summary = JSON.parse(stdout.trim());
+  assert.equal(summary.written, 0);
+  assert.equal(summary.upToDate, 1);
+});
