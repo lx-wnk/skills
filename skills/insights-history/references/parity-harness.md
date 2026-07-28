@@ -62,6 +62,8 @@ Every single one of the ten first-mismatches printed by the harness on 2026-07-2
 
 **This was not implemented in `extractMeta` or `parity.mjs`.** Per this task's constraints, `lib/transcript.mjs` must not be modified to chase parity, and `parity.mjs` is transcribed from the brief as given — it feeds `extractMeta` the full line array, matching what the skill's ingest path actually does today (`ingest.mjs` has no chain-walking logic either, so changing only the harness would make the harness lie about production behavior). The finding is recorded here as a scoped, well-understood future improvement, not applied silently.
 
+**Update, Task 6b (2026-07-28): this was subsequently implemented and then reverted as a rejected hypothesis.** See "Task 6b: chain-walk hypothesis — implemented, measured, rejected" below. Do not re-attempt the leaf-to-root walk as described above without reading that section first.
+
 ### 2 and 3 — not attempted
 
 The task brief specifies testing the branching hypothesis first and forming two more only if it fails. It did not fail — it fully accounted for every observed mismatch in the 2026-07-28 population — so hypotheses 2 and 3 were not run. (The brief separately lists three _other_ candidate hypotheses for the older, now-superseded `user_message_count` tail — excluding `<local-command-`/`[Image: source:` lines, filtering on `userType`, and deduping same-second identical text — but since branching alone closes the entire current residual, those were not needed either.)
@@ -74,3 +76,27 @@ As shipped, `BASELINE = { user_message_count: 0.91, assistant_message_count: 0.9
 - confirming with the built-in's actual source/behavior that this is precisely its algorithm (this task inferred it empirically; it was not cross-checked against Claude Code's own implementation).
 
 Either is out of scope here: the task brief is explicit that `extractMeta` must not be edited to chase this number without separate instruction. The 0.91 / 0.91 / 0.94 baseline is therefore a true floor, not a target dressed up to pass — a future task can raise it once the chain-walk behavior is implemented and re-measured.
+
+## Task 6b: chain-walk hypothesis — implemented, measured, rejected
+
+Task 6b took the "not implemented" note above at face value and built it: an `activeChain(lines)` helper that finds the last `last-prompt` line's `leafUuid` (falling back to the last line carrying a `uuid`) and walks `parentUuid` back to the root, then skips any line whose `uuid` is not on that chain in both `extractMeta` and `extractSlim`. This section records why that was reverted, so the next attempt doesn't have to rediscover it.
+
+**The hypothesis.** The built-in walks the active `parentUuid` chain leaf-to-root and counts only lines on that chain; our all-lines scan over-counts abandoned branches left behind by resume/edit/compaction events.
+
+**Why it looked right.** On `a34e6d3b` and `e312b49e` — the two sessions used to originally confirm the branching theory — the leaf-to-root walk reproduced the built-in's **full** `tool_counts` object exactly, matching every one of the ten first-mismatches from the 2026-07-28 population (table above). On `a34e6d3b` specifically, only 1325 of the file's 2087 lines lie on that chain — a large, plausible-looking reduction that lined up with the built-in's smaller counts. Two independent verifications, both against real sessions, both exact matches. That was enough to justify implementing it.
+
+**Why it is wrong.** A transcript is not a single-path tree in its active portion either — it fans out mid-turn. When one assistant turn emits several `tool_use` blocks, Claude Code writes each block as its own top-level JSONL line, chained by `parentUuid`, and the `tool_result` for each of those calls is _also_ a direct child of that same parent. A single `parentUuid` walk follows exactly one child at each such fork and silently discards every sibling — live, current tool calls and their results, not superseded edits. This is not rare: a scan of one real session alone counted **202 parents with more than one child**. The two sessions used to validate the hypothesis (`a34e6d3b`, `e312b49e`) apparently didn't expose enough of this fan-out to move their aggregate counts — which is exactly the trap: validating a whole-population claim against two convenient sessions.
+
+**The measured consequence.** Applying the chain walk across the full 34-session comparable population moved:
+
+- `assistant_message_count`: 0.91 → 0.59 (31/34 → 20/34)
+- `tool_counts`: 0.94 → 0.68 (32/34 → 23/34)
+- `user_message_count`: 0.91 → 0.91 (31/34 → 31/34, unchanged only by coincidence — two sessions it fixed via genuine abandoned-branch removal, `a272ed75` and `cee02856`, were offset by two new failures from the fan-out defect, `136a329f` and `4BA93539`)
+
+Both regressed metrics are well past the "stop and report" threshold set for this task; the change was reverted in full before it reached a commit.
+
+**Concrete evidence.** In real session `03e0bf4e-1874-4a82-8d1c-ab84830f0d16`: line 752 is an assistant line (`uuid=78b3e46d`, a `WebFetch` tool_use). It has two children — line 753 (`uuid=98db9934`, a `Bash` tool_use, same `message.id` as line 752, i.e. the _same_ logical turn's second tool call) and line 764 (`uuid=002f5e6e`, the `tool_result` for the WebFetch call). The leaf-to-root walk reaches `78b3e46d` and continues down the branch toward line 764, but never visits line 753 or its own descendants — dropping a real, live `Bash` call from the count. Multiplied across every parallel-tool-call turn in the file, this produced mismatches like `Bash: 108 vs 109` and `assistant_message_count: 459 vs 460` on this session alone.
+
+**Status of the real rule.** The built-in's actual counting algorithm remains unknown. Both the "count everything" baseline (0.91/0.91/0.94) and the "leaf-to-root chain" hypothesis (rejected here) are empirical guesses reverse-engineered from a handful of sessions, not confirmed against Claude Code's own source. Any future attempt at closing this residual **must be measured across the full comparable population** (currently n=34 via `parity.mjs`), never validated on only one or two sessions before being treated as confirmed — that is precisely how the rejected hypothesis survived long enough to be implemented and only caught at population scale.
+
+The all-lines scan in `extractMeta`/`extractSlim` is unchanged by this task. `BASELINE` in `parity.mjs` remains `{ user_message_count: 0.91, assistant_message_count: 0.91, tool_counts: 0.94 }`.
