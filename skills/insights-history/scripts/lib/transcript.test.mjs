@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { isUserMessage, classifyToolError, extractMeta, extractSlim } from "./transcript.mjs";
+import { isUserMessage, classifyToolError, extractMeta, extractSlim, DERIVED_META_FIELDS } from "./transcript.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -54,6 +54,22 @@ test("extractMeta counts turns, tools and tokens", async () => {
   assert.equal(meta.output_tokens, 150);
   assert.equal(meta.git_commits, 1);
   assert.equal(meta.first_prompt, "first prompt");
+});
+
+test("extractMeta emits exactly the fields it derives, and no others", async () => {
+  const meta = extractMeta(await fixtureLines(), {
+    sessionId: "s1",
+    projectPath: "/repo",
+    transcriptMtime: 1234,
+  });
+  // The session-meta cache is shared with Claude Code's own /insights. A field
+  // emitted here but not actually computed would overwrite the built-in's real
+  // value with a zero, and our fresh transcript_mtime would make that zero
+  // look current to both programs. Keep the two lists in lockstep.
+  assert.deepEqual([...Object.keys(meta)].sort(), [...DERIVED_META_FIELDS].sort());
+  for (const absent of ["user_interruptions", "lines_added", "lines_removed"]) {
+    assert.ok(!(absent in meta), `${absent} is not derived here and must not be emitted`);
+  }
 });
 
 test("extractMeta derives duration and response times", async () => {

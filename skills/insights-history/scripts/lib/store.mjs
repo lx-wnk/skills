@@ -36,9 +36,20 @@ export async function writeBufferAtomic(filePath, buffer) {
 }
 
 export async function readJson(filePath) {
+  let raw;
   try {
-    return JSON.parse(await readFile(filePath, "utf8"));
+    raw = await readFile(filePath, "utf8");
+  } catch (error) {
+    // Only a genuinely absent file means "nothing cached here". A permission
+    // or IO error must not be reported as absence: a caller that merges into
+    // an existing entry would then overwrite fields it never managed to read.
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+  try {
+    return JSON.parse(raw);
   } catch {
+    // A half-written or corrupt entry carries no fields worth preserving.
     return null;
   }
 }

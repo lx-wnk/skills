@@ -99,6 +99,43 @@ test("a failed archive write leaves no metadata marker behind", async (t) => {
   }
 });
 
+test("ingest preserves fields it does not compute in an existing entry", async () => {
+  const { data, transcript } = await scenario();
+  const { writeJsonAtomic } = await import("./lib/store.mjs");
+  await writeJsonAtomic(join(data, "session-meta", "s1.json"), {
+    session_id: "s1",
+    transcript_mtime: 1,
+    lines_added: 1377,
+    lines_removed: 28,
+    user_interruptions: 2,
+  });
+  await ingest(data, payload(transcript));
+  const meta = JSON.parse(await readFile(join(data, "session-meta", "s1.json"), "utf8"));
+  assert.equal(meta.lines_added, 1377, "a field we do not compute was destroyed");
+  assert.equal(meta.lines_removed, 28);
+  assert.equal(meta.user_interruptions, 2);
+  assert.equal(meta.user_message_count, 2, "a field we do compute was not updated");
+});
+
+test("backfill takes the project path from the transcript, never from the encoded directory", async () => {
+  const { dir, data, transcript } = await scenario();
+  // A directory name whose decoding is wrong: "-agent-infrastructure" would
+  // become "/agent/infrastructure", because the encoding maps both "/" and "-"
+  // onto "-" and is therefore not invertible. The transcript's own cwd
+  // ("/repo", from the fixture) is the only exact source. Backfill passes no
+  // cwd of its own, so this is the path every backfilled session takes.
+  const projectDir = join(dir, "projects", "-agent-infrastructure");
+  await mkdir(projectDir, { recursive: true });
+  await copyFile(transcript, join(projectDir, "s9.jsonl"));
+
+  const { stdout } = await run("node", [INGEST, "--backfill", "--projects", join(dir, "projects")], {
+    env: { ...process.env, CLAUDE_USAGE_DATA_DIR: data },
+  });
+  assert.equal(JSON.parse(stdout.trim()).written, 2);
+  const meta = JSON.parse(await readFile(join(data, "session-meta", "s9.json"), "utf8"));
+  assert.equal(meta.project_path, "/repo");
+});
+
 test("hook mode skips subagent transcripts", async () => {
   const { dir, data } = await scenario();
   const sub = join(dir, "projects", "-repo", "subagents", "agent-x.jsonl");
@@ -139,6 +176,34 @@ test("backfill walks every top-level transcript", async () => {
   assert.equal(summary.written, 2);
   assert.equal(summary.failed, 0);
   assert.deepEqual((await readdir(join(data, "session-meta"))).sort(), ["s1.json", "s2.json"]);
+});
+
+test("backfill exits 1 when a transcript failed, still printing the summary", async (t) => {
+  if (process.getuid?.() === 0) {
+    t.skip("running as root — filesystem permissions are not enforced");
+    return;
+  }
+  const { dir, data } = await scenario();
+  const { chmod } = await import("node:fs/promises");
+  await mkdir(join(data, "archive"), { recursive: true });
+  await chmod(join(data, "archive"), 0o555);
+  try {
+    await assert.rejects(
+      () =>
+        run("node", [INGEST, "--backfill", "--projects", join(dir, "projects")], {
+          env: { ...process.env, CLAUDE_USAGE_DATA_DIR: data },
+        }),
+      (error) => {
+        assert.equal(error.code, 1, "a backfill in which everything failed must not exit 0");
+        const summary = JSON.parse(error.stdout.trim());
+        assert.equal(summary.failed, 1);
+        assert.equal(summary.written, 0);
+        return true;
+      },
+    );
+  } finally {
+    await chmod(join(data, "archive"), 0o755);
+  }
 });
 
 test("backfill reports up-to-date sessions instead of rewriting them", async () => {

@@ -66,6 +66,38 @@ function languageOf(input) {
   return EXTENSION_LANGUAGES[filePath.slice(dot).toLowerCase()] ?? null;
 }
 
+// Fields extractMeta genuinely derives. Anything outside this list may exist
+// in a cache entry written by Claude Code's own /insights, which shares this
+// directory — those values must be carried forward, never zeroed. Our write
+// stamps a fresh transcript_mtime, so a clobbered field would be treated as
+// current and never recomputed by either program.
+export const DERIVED_META_FIELDS = new Set([
+  "session_id",
+  "transcript_mtime",
+  "project_path",
+  "start_time",
+  "duration_minutes",
+  "user_message_count",
+  "assistant_message_count",
+  "tool_counts",
+  "languages",
+  "git_commits",
+  "git_pushes",
+  "input_tokens",
+  "output_tokens",
+  "first_prompt",
+  "user_response_times",
+  "tool_errors",
+  "tool_error_categories",
+  "uses_task_agent",
+  "uses_mcp",
+  "uses_web_search",
+  "uses_web_fetch",
+  "files_modified",
+  "message_hours",
+  "user_message_timestamps",
+]);
+
 export function extractMeta(lines, { sessionId, projectPath, transcriptMtime }) {
   const meta = {
     session_id: sessionId,
@@ -82,7 +114,6 @@ export function extractMeta(lines, { sessionId, projectPath, transcriptMtime }) 
     input_tokens: 0,
     output_tokens: 0,
     first_prompt: "",
-    user_interruptions: 0,
     user_response_times: [],
     tool_errors: 0,
     tool_error_categories: {},
@@ -90,8 +121,6 @@ export function extractMeta(lines, { sessionId, projectPath, transcriptMtime }) 
     uses_mcp: false,
     uses_web_search: false,
     uses_web_fetch: false,
-    lines_added: 0,
-    lines_removed: 0,
     files_modified: 0,
     message_hours: [],
     user_message_timestamps: [],

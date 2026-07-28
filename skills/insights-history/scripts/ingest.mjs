@@ -33,11 +33,26 @@ async function readLines(filePath) {
   return lines;
 }
 
-function projectPathOf(transcriptPath, fallback) {
+// Every transcript line carries the cwd the session ran in. That is the real
+// project path; the directory name under ~/.claude/projects/ is a lossy
+// encoding of it (both "/" and "-" become "-"), so "_agent-infrastructure"
+// cannot be told apart from "_agent/infrastructure". Reading the cwd back out
+// of the file is exact where un-mangling the directory name is guesswork.
+function cwdOf(lines) {
+  for (const line of lines) {
+    if (typeof line?.cwd === "string" && line.cwd) return line.cwd;
+  }
+  return "";
+}
+
+// Last resort only, when neither the hook payload nor any line carries a cwd:
+// the encoded directory name, returned verbatim. Decoding it would produce a
+// confidently wrong path, which is worse than an obviously encoded one.
+function encodedProjectDir(transcriptPath) {
   const parts = transcriptPath.split(sep);
   const index = parts.lastIndexOf("projects");
-  if (index < 0 || !parts[index + 1]) return fallback ?? "";
-  return parts[index + 1].replace(/-/g, "/").replace(/^\//, "/");
+  if (index < 0 || !parts[index + 1]) return "";
+  return parts[index + 1];
 }
 
 export async function ingestOne(transcriptPath, { sessionId, cwd, root }) {
@@ -54,9 +69,16 @@ export async function ingestOne(transcriptPath, { sessionId, cwd, root }) {
   const lines = await readLines(transcriptPath);
   const meta = extractMeta(lines, {
     sessionId: id,
-    projectPath: cwd || projectPathOf(transcriptPath),
+    projectPath: cwd || cwdOf(lines) || encodedProjectDir(transcriptPath),
     transcriptMtime: mtime,
   });
+  // Merge, never replace. This cache is shared with Claude Code's own
+  // /insights, which writes fields extractMeta does not derive (see
+  // DERIVED_META_FIELDS). Our write stamps a fresh transcript_mtime — the
+  // staleness key both programs use — so anything zeroed here would be
+  // treated as current and never recomputed. Ours win for what we compute;
+  // everything else is carried forward untouched.
+  const merged = existing ? { ...existing, ...meta } : meta;
   const slim = extractSlim(lines)
     .map((entry) => JSON.stringify(entry))
     .join("\n");
@@ -70,7 +92,7 @@ export async function ingestOne(transcriptPath, { sessionId, cwd, root }) {
   // archive that was never written, and every later run would skip it
   // forever.
   await writeBufferAtomic(join(p.archive, `${id}.slim.jsonl.gz`), gzipSync(Buffer.from(slim)));
-  await writeJsonAtomic(join(p.sessionMeta, `${id}.json`), meta);
+  await writeJsonAtomic(join(p.sessionMeta, `${id}.json`), merged);
   return "written";
 }
 
@@ -117,6 +139,7 @@ async function backfill(root, projectsDir) {
     }
   }
   process.stdout.write(`${JSON.stringify(summary)}\n`);
+  return summary;
 }
 
 async function main() {
@@ -126,8 +149,11 @@ async function main() {
     if (argv.includes("--backfill")) {
       const flagIndex = argv.indexOf("--projects");
       const projectsDir = flagIndex >= 0 ? argv[flagIndex + 1] : join(homedir(), ".claude", "projects");
-      await backfill(root, projectsDir);
-      return;
+      const summary = await backfill(root, projectsDir);
+      // A run where nothing succeeded must not look like a run where nothing
+      // needed doing. The JSON summary still goes to stdout, so a caller sees
+      // both the failure count and the non-zero status.
+      return summary.failed > 0 ? 1 : 0;
     }
     const payload = JSON.parse(await readStdin());
     if (!payload.transcript_path) throw new Error("payload has no transcript_path");
@@ -139,10 +165,20 @@ async function main() {
   } catch (error) {
     await logFailure(root, error);
   }
+  return 0;
 }
 
-if (!process.argv.slice(2).includes("--backfill")) {
+const isBackfill = process.argv.slice(2).includes("--backfill");
+if (!isBackfill) {
   setTimeout(() => process.exit(0), SELF_TIMEOUT_MS).unref();
 }
-await main();
-process.exit(0);
+const code = await main();
+if (isBackfill) {
+  // Setting exitCode rather than calling process.exit lets Node flush the
+  // JSON summary on stdout before the process ends.
+  process.exitCode = code;
+} else {
+  // The hook path exits 0 unconditionally and deliberately: a SessionEnd hook
+  // that fails loudly would interrupt the user's session over telemetry.
+  process.exit(0);
+}

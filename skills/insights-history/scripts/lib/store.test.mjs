@@ -43,3 +43,22 @@ test("readJson returns null instead of throwing on malformed JSON", async () => 
   await writeFile(target, "{not json");
   assert.equal(await readJson(target), null);
 });
+
+test("readJson rethrows an unreadable file instead of reporting it as absent", async (t) => {
+  if (process.getuid?.() === 0) {
+    t.skip("running as root — filesystem permissions are not enforced");
+    return;
+  }
+  const dir = await mkdtemp(join(tmpdir(), "store-"));
+  const target = join(dir, "locked.json");
+  const { writeFile, chmod } = await import("node:fs/promises");
+  await writeFile(target, JSON.stringify({ lines_added: 1377 }));
+  await chmod(target, 0o000);
+  try {
+    // "null" here would mean "no entry", and a caller merging into an existing
+    // entry would overwrite fields it never managed to read.
+    await assert.rejects(() => readJson(target), { code: "EACCES" });
+  } finally {
+    await chmod(target, 0o644);
+  }
+});
