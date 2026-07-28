@@ -174,3 +174,36 @@ export function extractMeta(lines, { sessionId, projectPath, transcriptMtime }) 
 
   return meta;
 }
+
+export function extractSlim(lines) {
+  const slim = [];
+
+  for (const line of lines) {
+    if (isUserMessage(line)) {
+      slim.push({ kind: "user", at: line.timestamp, text: textOf(line.message.content) });
+      continue;
+    }
+
+    if (line?.type === "user" && !line.isSidechain && Array.isArray(line.message?.content)) {
+      for (const block of line.message.content) {
+        if (block?.type !== "tool_result") continue;
+        const body = typeof block.content === "string" ? block.content : "";
+        if (!/error|failed|not found|rejected/i.test(body)) continue;
+        slim.push({ kind: "tool_error", at: line.timestamp, toolError: classifyToolError(body) });
+      }
+      continue;
+    }
+
+    if (line?.type !== "assistant" || line.isSidechain) continue;
+
+    const content = line.message?.content ?? [];
+    slim.push({
+      kind: "assistant",
+      at: line.timestamp,
+      text: textOf(content),
+      tools: content.filter((b) => b?.type === "tool_use").map((b) => b.name ?? "unknown"),
+    });
+  }
+
+  return slim;
+}

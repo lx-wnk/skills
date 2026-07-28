@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { isUserMessage, classifyToolError, extractMeta } from "./transcript.mjs";
+import { isUserMessage, classifyToolError, extractMeta, extractSlim } from "./transcript.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -91,4 +91,31 @@ test("extractMeta detects languages from edited file paths", async () => {
     transcriptMtime: 1234,
   });
   assert.deepEqual(meta.languages, { TypeScript: 1 });
+});
+
+test("extractSlim keeps prompts and assistant text, drops payloads", async () => {
+  const slim = extractSlim(await fixtureLines());
+  const kinds = slim.map((entry) => entry.kind);
+  // Fixture order: prompt, assistant+Bash, clean tool_result (dropped),
+  // assistant+Edit, failing tool_result (kept as tool_error), sidechain pair
+  // (dropped), snapshot line (dropped), prompt.
+  assert.deepEqual(kinds, ["user", "assistant", "assistant", "tool_error", "user"]);
+  assert.equal(slim[0].text, "first prompt");
+  assert.equal(slim[1].text, "ok");
+  assert.deepEqual(slim[1].tools, ["Bash"]);
+  assert.equal(slim[4].text, "second prompt");
+});
+
+test("extractSlim never emits tool result content", async () => {
+  const slim = extractSlim(await fixtureLines());
+  const serialised = JSON.stringify(slim);
+  assert.ok(!serialised.includes("done"), "tool result body leaked into slim output");
+  assert.ok(!serialised.includes("subagent chatter"), "subagent traffic leaked into slim output");
+});
+
+test("extractSlim records tool errors as a flag, not as text", async () => {
+  const slim = extractSlim(await fixtureLines());
+  const withError = slim.filter((entry) => entry.toolError);
+  assert.equal(withError.length, 1);
+  assert.equal(withError[0].toolError, "Command Failed");
 });
