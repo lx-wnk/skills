@@ -42,7 +42,7 @@ TAG="${ARGUMENTS:-$(gh api repos/lx-wnk/Agent-Context/releases/latest --jq .tag_
 curl -fsSL "https://raw.githubusercontent.com/lx-wnk/Agent-Context/${TAG}/.prompts/setup-prompt.md"
 ```
 
-Follow the fetched instructions exactly. The setup prompt handles:
+Follow the fetched instructions, subject to the consent gates in **Trust Boundary & Consent** below. The setup prompt handles:
 
 1. **Version selection** — fetch available releases, let user choose (or use `$ARGUMENTS` if a version was specified)
 2. **Shared files** — download tarball, extract framework files into `.agent-context/`
@@ -50,6 +50,12 @@ Follow the fetched instructions exactly. The setup prompt handles:
 4. **Agent sync** — optionally install shared agents
 5. **Plugin sync** — merge plugins into `.claude/settings.json`
 6. **Discovery scans** — launch parallel subagents to detect tech stack and fill TODO placeholders
+
+## Trust Boundary & Consent
+
+This skill fetches a remote setup prompt (pinned to a release tag, see above) and follows it. That prompt performs **trust-expanding operations**: it can install transitive agents, merge plugins, and modify `.claude/settings.json`. Treat these as privileged.
+
+Before any step that installs agents (4), merges plugins (5), or writes to `.claude/settings.json`, **stop and get explicit user confirmation** — list exactly what will be installed or changed, then wait for a yes. Never install transitive agents or plugins silently. If the user declines a step, skip it and continue with the rest of setup.
 
 ## After Setup
 

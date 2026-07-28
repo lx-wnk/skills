@@ -42,7 +42,7 @@ TAG="${ARGUMENTS:-$(gh api repos/lx-wnk/Agent-Context/releases/latest --jq .tag_
 curl -fsSL "https://raw.githubusercontent.com/lx-wnk/Agent-Context/${TAG}/.prompts/setup-prompt.md"
 ```
 
-The setup prompt auto-detects UPDATE mode (because `.agent-context-version` exists) and handles:
+The setup prompt auto-detects UPDATE mode (because `.agent-context-version` exists). Follow the fetched instructions, subject to the consent gates in **Trust Boundary & Consent** below. The setup prompt handles:
 
 1. **Version check** — fetch latest release, compare with current version
 2. **Shared file refresh** — overwrite only shared files (`agent-startup.md`, `layer0-agent-workflow.md`, `base-principles.md`, `plugins.json`)
@@ -52,6 +52,12 @@ The setup prompt auto-detects UPDATE mode (because `.agent-context-version` exis
 6. **Compatibility check** — scan for deprecated patterns and suggest fixes
 
 If `$ARGUMENTS` contains a version tag, use that version instead of latest.
+
+## Trust Boundary & Consent
+
+This skill fetches a remote setup prompt (pinned to a release tag, see above) and follows it. That prompt performs **trust-expanding operations**: it can update transitive agents, merge plugins, and modify `.claude/settings.json`. Treat these as privileged, even though this is an update into an already-initialized project.
+
+Before any step that updates agents (4), merges plugins (5), or writes to `.claude/settings.json`, **stop and get explicit user confirmation** — since this merges into an existing configuration, list exactly what will be ADDED or CHANGED against the current state, then wait for a yes. Never install transitive agents or merge plugins silently. If the user declines a step, skip it and continue with the rest of the update.
 
 ## What is NEVER touched
 
