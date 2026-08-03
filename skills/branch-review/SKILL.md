@@ -96,7 +96,7 @@ If a subagent sees no relevance in the diff for its scope, it still delivers a r
 
 ## Deliverable: Findings.md
 
-Path: store in the outputs/workspace folder (`outputs/Findings.md` or equivalent).
+Path: store in the outputs/workspace folder (`outputs/Findings.md` or equivalent). Run `mkdir -p outputs` first — `outputs/` is gitignored, so it is absent in a fresh clone or worktree and the write would otherwise fail after the whole review has already been paid for.
 
 **Sensitive data:** Findings.md may contain masked secret fingerprints and internal paths — do not commit it; add `outputs/` to `.gitignore`.
 
