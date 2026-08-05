@@ -141,6 +141,14 @@ Run each relevant check and record findings with `file:line`:
 
 ## Phase 6: Report
 
+### Host-rendered findings (optional, in addition to the report below)
+
+Some hosts render findings as a typed, clickable list (Claude Code: `ReportFindings`). Feature-detect it; if absent, skip silently and note `host rendering: not available` under Files reviewed.
+
+Component findings qualify **only** when they name a file and line and a concrete failure scenario — an LSP violation that throws on a legal subtype, a mutable default that leaks state between calls. Pure design judgements (naming, cohesion, pattern fit) stay in the Markdown report. **Never invent a failure scenario to make a design finding eligible.** Emit once, most-severe first, after the checks are complete; do not repeat those entries as chat text.
+
+### Report
+
 Output in the user's language:
 
 ```markdown

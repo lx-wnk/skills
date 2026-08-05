@@ -80,6 +80,9 @@ Before spawning subagents: detect the tech stack from the repo (`package.json`, 
 1. **Code-Quality Agent** — readability, naming, complexity, dead paths, tests, coverage gaps, conventions of the detected tech stack. Reviews every diff-touched file.
 2. **Architecture Agent** — layers, coupling, cohesion, separation of concerns, scalability, anti-patterns, tech debt created or enlarged by the diff. Provides ADR proposals for larger topics.
 3. **Security Agent** (OWASP Top 10 + ASVS) — injection, AuthN/AuthZ, crypto, SSRF, deserialization, secrets, dependency CVEs (`npm audit`, `composer audit`, `pip-audit`, `gh dependabot`, etc.), headers (CSP/HSTS/COOP/COEP), rate limiting, logging. Per finding: CWE reference, OWASP category, CVSS estimate, PoC sketch. When reporting a secret, mask the value (e.g. first+last chars: `AKIA…7of8`) — never reproduce it verbatim.
+
+   **Prefer the host's security review when available.** Feature-detect a host-provided security review over the pending branch changes (Claude Code: `/security-review`). When present, run it first and fold its output into this agent's report under the finding schema below — fill the CWE/OWASP/CVSS fields from what it supplies and mark the rest `hypothesis` rather than guessing. When absent, this agent works as specified. Either way it still covers what the built-in does not: the dependency CVE audit, header/CSP configuration, and secret masking. Record which path ran in the coverage report: `security: /security-review + own agent` or `security: own agent only`.
+
 4. **SEO Agent** — titles/meta, canonicals, hreflang, robots.txt, sitemap.xml, structured data (JSON-LD), OpenGraph, Core Web Vitals, SSR correctness. Active only when the diff touches user-facing routes/templates/meta tags.
 5. **Privacy/Legal Agent** — cookie consent, tracking before consent, data processors, mandatory pages (imprint/privacy policy/terms depending on jurisdiction), third-country transfers, server location. Accessibility law (BFSG for DE, EAA for EU, ADA for US, etc.) per detected jurisdiction. Active only when the diff touches data-processing paths, tracking, forms, or mandatory pages.
 6. **UI/UX Agent** — heuristics (Nielsen), hierarchy, consistency, mobile, touch targets, error messages, empty/loading states, microcopy, accessibility (WCAG 2.1 AA — contrast, keyboard, screen reader, ARIA). Active only when the diff touches UI.
@@ -109,6 +112,17 @@ Path: store in the outputs/workspace folder (`outputs/Findings.md` or equivalent
 5. **Findings Index Table** — all findings sorted by priority (columns: ID, Prio, Category, Title, Location, Effort).
 6. **Findings in detail** — COMPLETE, one per section (schema below).
 7. **Appendix** — tool/method list, versions, references.
+
+## Host-Rendered Findings (optional presentation layer)
+
+Some hosts render findings as a typed, clickable list instead of leaving the user to open a file (Claude Code: `ReportFindings`). Use it when present — **in addition to** `Findings.md`, never instead of it.
+
+- **Feature-detect first.** No findings-reporting tool in this host → skip silently, record `host rendering: not available` in the coverage report, continue. No hard failure.
+- **Eligible findings only.** Emit a finding only when it has all three: file path, line, and a concrete failure scenario (inputs or state → wrong output, crash, or exposure). Privacy/legal, SEO, architectural-cohesion and confirmed-good P4 entries have no failure scenario and stay in `Findings.md`. **Never invent a scenario to make a finding eligible** — a fabricated crash path turns a real compliance finding into a fake bug.
+- **Rank, don't drop.** The host list has no priority column: sort most-severe first and lead each short summary with the priority (`P1 unbounded retry loop`).
+- **One call, after step 7.** Emit the complete eligible set once, after the verification pass — not per subagent, not as findings arrive. Do not also print those findings as chat text.
+- **`Findings.md` stays authoritative.** State the relationship in the Executive Summary so the gap is never misread: `18 findings, 7 host-rendered`.
+- **When invoked by `/review-and-fix` as part of a multi-PR run: do not emit.** N reviews would produce N competing host lists, each overwriting the last. Write the eligible set into `Findings.md` marked `host-eligible: yes` per finding and let the orchestrator emit once for the whole fleet.
 
 ### Prioritization
 
@@ -186,7 +200,8 @@ OUTPUT: Markdown report with findings per schema + coverage note (what was check
    - **Does EVERY finding have a diff reference?** Findings without a diff trigger → remove or prove a diff trigger.
    - Does the count in the index match the detail sections?
    - Is the coverage report complete (including what was NOT checked)?
-8. **Return the link** to the finished file.
+8. **Emit host-rendered findings** — see the section above. Skip silently if unavailable.
+9. **Return the link** to the finished file.
 
 ## Exit Criteria (the review is NOT complete until ALL are true)
 
@@ -200,6 +215,7 @@ Do not report the review as done, and do not enter the auto-fix phase, until eve
 - [ ] The coverage report lists what was NOT checked and why — no silent gaps (step 7).
 - [ ] Every finding is justified, including P3/P4; unverified ones are marked `hypothesis`.
 - [ ] `Findings.md` is written to the outputs folder and its link is returned.
+- [ ] Host rendering either ran (eligible subset emitted in one call) or was recorded as unavailable — never silently omitted (step 8).
 
 ## Important
 

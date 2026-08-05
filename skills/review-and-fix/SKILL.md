@@ -57,7 +57,7 @@ flowchart TD
     D --> E["P5 Archive report + fix flag"]
     E --> F["P6 Index row"]
   end
-  PER --> G["P7 Batched design-decision escalation (all PRs)"]
+  PER --> G["P7 Batched host rendering + escalation (all PRs)"]
   G --> H["P8 Implement choices, push, clean up worktrees"]
 ```
 
@@ -147,6 +147,10 @@ Per PR, with its worktree as the working directory:
 
 Confident fixes, the `/simplify` pass, and the test-lint gate run unchanged — only the interactive escalation is deferred. Push is deferred to Phase 8.
 
+**Deferred host rendering (fleet override).** For the same reason, no per-PR review emits host-rendered findings: N reviews would produce N competing lists, each overwriting the last. Instruct each delegated review:
+
+> Do not emit host-rendered findings. Mark each eligible finding `host-eligible: yes` in your `Findings.md`. The orchestrator emits once for the whole fleet.
+
 **Failure isolation.** A PR whose review aborts (empty diff, inaccessible fork, red preconditions) is recorded with `status: failed` plus the reason, and the run continues with the remaining PRs. One broken PR does not end the fleet.
 
 ## Phase 5: Archive the report
@@ -178,6 +182,7 @@ status: reviewed | failed
 fixes-applied: true | false
 fix-mode: --apply-fixes | read-only | read-only (forced: fork without maintainer write access)
 findings: P0 {n}, P1 {n}, P2 {n}, P3 {n}, P4 {n}
+host-eligible: {n} — findings with file, line, and a concrete failure scenario
 disposition: fixed {n}, escalated {n}, out-of-scope {n}, discarded {n}
 gate: {baseline green → final green (npm test, npm run lint) | no gate available | deps not installed}
 simplify: {applied (sha) | skipped: <reason> | discarded: broke tests}
@@ -210,7 +215,17 @@ Maintain `outputs/reviews/index.md`, newest run first:
 
 One row per PR per run. Do not rewrite existing rows — a report that gets a new top section gets a new index row too.
 
-## Phase 7: Batched escalation
+## Phase 7: Batched host rendering and escalation
+
+### Host-rendered findings — one call for the whole fleet
+
+Some hosts render findings as a typed, clickable list (Claude Code: `ReportFindings`). Feature-detect it; if absent, skip silently and record `host rendering: not available` in the final summary.
+
+Collect every finding marked `host-eligible: yes` across all archived reports and emit them in a **single** call, sorted most-severe first across PRs (not grouped by PR — the host list has no grouping). Lead each short summary with the PR and priority so a row stays traceable to its report: `#42 P1 unbounded retry loop`.
+
+Findings without a file, a line, or a concrete failure scenario stay in their report files. Say so in the final summary: `61 findings across 4 PRs, 12 host-rendered`.
+
+### Batched escalation
 
 Collect the `Design Decision` entries from every archived report and present them in one block, grouped by PR:
 
@@ -261,6 +276,7 @@ Report a table: PR, branch, findings per priority, fix status, push status, repo
 - PRs skipped and why (draft, empty diff, failed).
 - Worktrees left behind and why.
 - Escalations still unanswered.
+- How many findings were host-rendered against the total (`61 findings across 4 PRs, 12 host-rendered`), or `host rendering: not available`. A smaller host list is a schema constraint, not a gap — say which.
 
 ## Principles
 
