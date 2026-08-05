@@ -1,7 +1,7 @@
 ---
 name: branch-review
 license: MIT
-description: 'Multi-agent code review EXCLUSIVELY of the diff between the current branch and a base branch (default main, fallback master/develop) — not a whole-repo audit, only diff-touched areas. Spawns parallel subagents for code quality, architecture, security (OWASP/CWE/CVSS), SEO, privacy/legal, UI/UX (WCAG), and performance, consolidated into a Findings.md with P0–P4 prioritization. Optional `--apply-fixes` applies clear fixes, runs a `/simplify` pass behind a test/lint gate (`--no-simplify` opts out), and escalates design decisions. Use for "review this branch", "PR review", "diff review", "branch review", "review my PR", "code review for branch", "review what changed", "review and fix", "fix PR issues", or German "review meinen branch", "review die änderungen", "schau dir den branch an", "PR-Review" — whenever a PR link, branch range, or diff is posted, even without the word "review" if context is clear. DO NOT trigger for a whole-project audit without branch context — use full-project-review.'
+description: 'Multi-agent code review EXCLUSIVELY of the diff between the current branch and a base branch (default main) — not a whole-repo audit, only diff-touched areas. Spawns parallel subagents for code quality, architecture, security (OWASP/CWE/CVSS), SEO, privacy/legal, UI/UX (WCAG), and performance, consolidated into a P0–P4 Findings.md. Optional `--apply-fixes` applies clear fixes and a `/simplify` pass behind a test/lint gate (`--no-simplify` opts out), and escalates design decisions. Use for "review this branch", "PR review", "diff review", "branch review", "review my PR", "review what changed", or German "review meinen branch", "review die änderungen", "schau dir den branch an", "PR-Review" — whenever a PR link, branch range, or diff is posted, even without the word "review" if context is clear. DO NOT trigger for a whole-project audit without branch context — use full-project-review. DO NOT trigger for several or all open PRs ("review my PRs", "fix PR issues", "alle PRs prüfen") — use review-and-fix.'
 user-invocable: true
 argument-hint: "[base-branch] [--apply-fixes] [--no-simplify]"
 ---
@@ -96,7 +96,7 @@ If a subagent sees no relevance in the diff for its scope, it still delivers a r
 
 ## Deliverable: Findings.md
 
-Path: store in the outputs/workspace folder (`outputs/Findings.md` or equivalent).
+Path: store in the outputs/workspace folder (`outputs/Findings.md` or equivalent). Run `mkdir -p outputs` first — `outputs/` is gitignored, so it is absent in a fresh clone or worktree and the write would otherwise fail after the whole review has already been paid for.
 
 **Sensitive data:** Findings.md may contain masked secret fingerprints and internal paths — do not commit it; add `outputs/` to `.gitignore`.
 
@@ -214,7 +214,9 @@ Do not report the review as done, and do not enter the auto-fix phase, until eve
 
 **Default is read-only.** The following phase runs after step 7 (verification pass) ONLY if `$ARGUMENTS` contains the flag `--apply-fixes`.
 
-This phase applies clear fixes directly to the branch and escalates design decisions to the user. It replaces the former `review-and-fix` skill.
+This phase applies clear fixes directly to the branch and escalates design decisions to the user.
+
+When invoked by `/review-and-fix` as part of a multi-PR run, the escalation is **deferred**: write the design decisions into the `## Auto-Fix Summary` instead of prompting, and let the orchestrator batch them. Everything else in this phase is unchanged.
 
 Flags: `--no-simplify` disables the Simplify Pass (see below). Without `--apply-fixes` the flag is a silent no-op.
 
@@ -348,3 +350,10 @@ This keeps it traceable what the skill changed in the code — and what the user
 - **One concern per commit.** Three small commits beat one with three different fixes.
 - **Honest uncertainty.** When in doubt, do not fix — escalate.
 - **Read-only is the default.** Auto-fix runs ONLY with explicit `--apply-fixes`.
+
+---
+
+## Related skills
+
+- [`/review-and-fix`](../review-and-fix/SKILL.md) — runs this skill once per pull request across several PRs, each in its own worktree, and archives the reports.
+- [`/full-project-review`](../full-project-review/SKILL.md) — whole-repo audit when there is no diff to anchor on.

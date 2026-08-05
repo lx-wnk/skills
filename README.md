@@ -57,6 +57,7 @@ Prefer to be explicit? Every skill is also a slash command: `/branch-review`.
 | [full-project-review](skills/full-project-review/SKILL.md) | Multi-agent audit of the whole project (HEAD state, all repos) | `/full-project-review` |
 | [oss-readiness](skills/oss-readiness/SKILL.md) | Audit a repo for public-release readiness — README, docs, community-health files, repo signals | `/oss-readiness [path] [--apply-fixes]` |
 | [reproduce-first-debug](skills/reproduce-first-debug/SKILL.md) | Debug under a hard reproduce-first gate — no hypothesis before a failing repro; repro becomes a permanent regression test | `/reproduce-first-debug [bug description \| ticket key \| pasted error]` |
+| [review-and-fix](skills/review-and-fix/SKILL.md) | Run `/branch-review` across several open PRs — one worktree per PR, archived report per PR with fix status, batched escalation | `/review-and-fix [PR numbers] [--apply-fixes] [--no-simplify] [--parallel N] [--include-drafts]` |
 
 **Agent Context & Coordination**
 
