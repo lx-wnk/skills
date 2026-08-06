@@ -106,6 +106,18 @@ For schema-driven outputs (e.g. `Findings.md`):
 - Show the schema as a fenced code block in the SKILL.md.
 - Make explicit that placeholders/comments inside the schema (`<!-- ... -->`, `{PLACEHOLDER}`) are author-instructions and **must not appear in the final emitted file**.
 
+### Host-rendered findings
+
+Some hosts can render findings as a typed, clickable list instead of leaving the user to open a file — Claude Code exposes `ReportFindings`, the VS Code extension uses inline `addComment`. A review skill should use that when it exists, but **in addition to** its report file, never instead of it.
+
+The rules below are binding for every skill that emits findings. Copy them into the skill body — skills are installed individually (`npx skills add owner/repo@skill`), so they must stay self-contained; a pointer to this guide does not travel with them.
+
+- **Feature-detect first** (cf. §8). No findings-reporting tool in this host → skip silently and record `host rendering: not available` in the report.
+- **Eligible findings only.** Emit to the host list only findings that carry all three: a file path, a line, and a concrete failure scenario (inputs or state → wrong output, crash, or exposure). Compliance, legal, SEO, architectural-cohesion, and confirmed-good observations have no failure scenario and stay in the report file. **Never invent a scenario to make a finding eligible** — that turns a real compliance finding into a fake bug.
+- **Rank, don't drop.** These host lists carry no priority field, so sort most-severe first and lead each short summary with the priority (`P1 unbounded retry loop`).
+- **One call, after verification.** Emit the complete eligible set once, after the skill's verification pass — not incrementally as findings are discovered. Do not also print those findings as chat text; the host already renders them.
+- **The report file stays authoritative.** It holds every finding, the coverage report, and what was not checked. State the relationship in the summary so the difference is never mistaken for a gap: `18 findings, 7 host-rendered`.
+
 ## 7. Discovery and Cross-Skill References
 
 Skills routinely call each other. Conventions:

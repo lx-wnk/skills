@@ -74,6 +74,15 @@ Path: store in the outputs/workspace folder (`outputs/Findings.md` or equivalent
 6. **Findings in detail** — COMPLETE, one per section (schema below).
 7. **Appendix** — tool/method list, versions, references, glossary.
 
+## Host-Rendered Findings (optional presentation layer)
+
+Some hosts render findings as a typed, clickable list instead of leaving the user to open a file (Claude Code: `ReportFindings`). Use it when present — **in addition to** `Findings.md`, never instead of it.
+
+- **Feature-detect first.** No findings-reporting tool in this host → skip silently, record `host rendering: not available` in the coverage report, continue. No hard failure.
+- **Eligible findings only.** Emit a finding only when it has all three: file path, line, and a concrete failure scenario (inputs or state → wrong output, crash, or exposure). Privacy/legal, SEO, architectural-cohesion and confirmed-good P4 entries have no failure scenario and stay in `Findings.md`. **Never invent a scenario to make a finding eligible.**
+- **A full audit routinely exceeds what a host list can carry.** Emit the eligible P0–P2 set; leave P3/P4 to the file and say so: `142 findings, 23 host-rendered (P0–P2 with a reproducible failure path)`.
+- **One call, after the verification pass.** Not per subagent, not per repo. Do not also print those findings as chat text.
+
 ### Prioritization
 
 - **P0 — Critical:** actively exploitable, data leak, legal violation with fine risk.

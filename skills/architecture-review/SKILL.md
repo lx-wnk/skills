@@ -124,6 +124,14 @@ Run each relevant check and record findings with `file:line`:
 
 ## Phase 5: Report
 
+### Host-rendered findings (optional, in addition to the report below)
+
+Some hosts render findings as a typed, clickable list (Claude Code: `ReportFindings`). Feature-detect it; if absent, skip silently and note `host rendering: not available` under Checks run.
+
+Architectural findings qualify **only** when they name a file and line and a concrete failure scenario — a dependency cycle that will deadlock at startup, a layer breach that lets unvalidated input reach persistence. Structural observations without a failure path (cohesion, naming, ADR drift) stay in the Markdown report. **Never invent a failure scenario to make a structural finding eligible.** Emit once, most-severe first, after the checks are complete; do not repeat those entries as chat text.
+
+### Report
+
 Output in the user's language. Structure:
 
 ```markdown
