@@ -139,6 +139,37 @@ handoff-slug: "{TOPIC_SLUG}"
 
 ---
 
+## State
+
+<!-- The mechanical facts a resuming session must not have to rediscover. -->
+
+- **Branch:** `{BRANCH}` · **Base:** `{BASE_BRANCH}`
+- **Worktree:** `{ABSOLUTE_PATH}`
+- **Dirty files:** verbatim `git status --short` output. If clean, write `_(clean)_`.
+
+## Open PRs
+
+<!-- Source the rows from `gh pr list --json number,title,statusCheckRollup` — never from memory.
+     If the repo has no open PRs: write `_(none)_`. -->
+
+| PR   | Title | CI                    | Merge blocker |
+| ---- | ----- | --------------------- | ------------- |
+| #... | ...   | green / red / pending | ... or —      |
+
+## Verified
+
+<!-- Claims proven in this session. One line each: the claim, the exact command, and the
+     decisive line of its output. A claim without a pasted command does not belong here. -->
+
+- **Claim:** ... **Command:** `...` **Output:** `...`
+
+## Unverified
+
+<!-- Claims that still need proof, each with the cheapest command that would settle it.
+     A claim with no command listed belongs in `## Open questions`, not here. -->
+
+- **Claim:** ... **Settles it:** `...`
+
 ## What was implemented
 
 <!-- List of concrete changes in this session, grouped by feature/area.
@@ -174,6 +205,9 @@ handoff-slug: "{TOPIC_SLUG}"
 <!-- What is unresolved? What still needs discussion, research, or a decision?
      Phrase concretely and actionably. -->
 
+<!-- Prefix any entry that blocks progress with `BLOCKED:` plus who or what can unblock it.
+     An open question nobody is waiting on is not a blocker. -->
+
 - [ ] ...
 
 ## Open TODOs in code
@@ -186,6 +220,9 @@ handoff-slug: "{TOPIC_SLUG}"
 
 <!-- Prioritized tasks for the next session. Top priority first.
      Each step should be immediately actionable (no vague "continue"). -->
+
+<!-- The FIRST entry is the Next Action: exactly one concrete command the next session can
+     run without re-reading anything else. -->
 
 - [ ] ...
 - [ ] ...
