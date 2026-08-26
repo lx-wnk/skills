@@ -58,6 +58,7 @@ Checked once, before step 1 — the reproduction artifact built in step 2 makes 
 
 - Working tree must be clean (`git status --porcelain` empty). Otherwise abort with the note "Please commit or stash first."
 - The current branch is not `main`/`master`/`develop` (no commit on the default branch).
+- No stale artifact is in play: kill any running dev or desktop server, print the build artifact's hash or mtime, clear the relevant test caches, and rebuild clean. Paste the evidence that the process under test serves the new artifact. A reproduction built against a stale bundle proves nothing, and every later step in this skill inherits that error.
 
 ### 1. No hypothesis without data
 
