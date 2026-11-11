@@ -15,7 +15,7 @@ There are three natural moments to reach for Obsidian:
 
 1. **Before a task** — search for existing context so you don't repeat research or contradict prior decisions
 2. **Mid-task** — when you discover something non-obvious (a hidden bug cause, a framework gotcha, an architecture constraint, a deliberate tradeoff) that would cost future-you to rediscover
-3. **After a task** — persist new learnings, updated project status, or decisions made during the session
+3. **After a task** — persist new learnings, updated project status, or decisions made during the session. After a session with real work, also append a session changelog entry as described in [references/session-changelog.md](references/session-changelog.md)
 
 If something gets written to CLAUDE.md or project documentation, consider whether it also belongs in Obsidian — CLAUDE.md is project-scoped, Obsidian is cross-project and searchable.
 
