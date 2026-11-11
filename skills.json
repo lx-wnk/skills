@@ -89,6 +89,12 @@
       "license": "MIT"
     },
     {
+      "name": "sparring",
+      "description": "Act as a direct sparring partner for a decision or plan the user describes — no validation, no flattery, no softening. Questions assumptions, names blind spots, underestimated risk and effort, weak reasoning and opportunity cost, and ends with a prioritised list of what to change. Every objection rests on what the user wrote or on checked facts; it never infers motives or feelings. Read-only: it gives advice and modifies no files. Use when the user says \"sparring\", \"challenge my plan\", \"poke holes in this\", \"play devil's advocate\", \"be brutally honest\", \"tear this apart\", \"what am I missing\", \"is this a good idea\", \"should I do X\", or German \"spar mit mir\", \"hinterfrag meinen Plan\", \"sei ehrlich\", \"zerleg das\", \"was übersehe ich\", \"ist das eine gute Idee\", \"Advocatus Diaboli\", \"kritisier meinen Ansatz\". DO NOT trigger for code or diff review — use branch-review or architecture-review.",
+      "path": "skills/sparring",
+      "license": "MIT"
+    },
+    {
       "name": "tech-gazette",
       "description": "Generate a Tech Gazette as a self-contained HTML file covering 18+ topic areas relevant to Software Architects and Lead Developers working in Shopware/E-Commerce agencies. Supports daily and weekly editions. Use this skill whenever the user asks to create a tech gazette, generate a tech briefing, write a tech newspaper, or says things like \"tech gazette\", \"Gazette erstellen\", \"daily tech news\", \"weekly tech news\", \"Tech-Briefing\", \"tägliche Gazette\", \"wöchentliche Gazette\".",
       "path": "skills/tech-gazette",

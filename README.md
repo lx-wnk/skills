@@ -75,6 +75,12 @@ Prefer to be explicit? Every skill is also a slash command: `/branch-review`.
 | [session-handoff](skills/session-handoff/SKILL.md) | Generate a structured `outputs/handoffs/latest.md` at the end of a session — changes, decisions, next steps; rotates the previous handoff to a dated archive | `/session-handoff [focus topics or time hint]` |
 | [tech-gazette](skills/tech-gazette/SKILL.md) | Generate a daily or weekly tech news briefing as a self-contained HTML newspaper | `/tech-gazette [--daily\|--weekly] [customers]` |
 
+**Decision Support**
+
+| Skill | Description | Invoke |
+| --- | --- | --- |
+| [sparring](skills/sparring/SKILL.md) | Challenge a decision or plan directly — assumptions, blind spots, risks, opportunity cost; evidence-based objections, prioritised changes | `/sparring [decision or plan to challenge]` |
+
 ## How it works
 
 A skill is just a folder with a `SKILL.md` — YAML frontmatter plus Markdown instructions. It loads in three stages (**progressive disclosure**), so the library scales without flooding the context window:
