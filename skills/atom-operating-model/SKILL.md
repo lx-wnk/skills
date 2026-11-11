@@ -32,7 +32,7 @@ Structured PM coordination for non-trivial parallel work: one coordinating main-
 
 ## When it triggers
 
-The global rule is the trigger: **delegate when the work splits into independent units, produces long output (full test run, wide search), or needs an independent reviewer. A single unit the coordinator already understands stays with the coordinator.** In this mode the coordinator does not edit code; it stays a lean PM. Any time work decomposes into multiple independently executable streams — code, docs, analysis, or mixed — load this skill and choose a topology before dispatching.
+The global rule is the trigger: **delegate when the work splits into independent units, produces long output (full test run, wide search), or needs an independent reviewer. A single unit the coordinator already understands stays with the coordinator.** In this mode the coordinator does not edit code, except to merge worker branches and resolve conflicts; it stays a lean PM. Any time work decomposes into multiple independently executable streams — code, docs, analysis, or mixed — load this skill and choose a topology before dispatching.
 
 ## Examples
 
