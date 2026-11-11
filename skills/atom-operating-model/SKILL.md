@@ -26,13 +26,13 @@ Structured PM coordination for non-trivial parallel work: one coordinating main-
 
 **Does NOT:**
 
-- Handle trivial single-step tasks (≤1 tool call) — those stay with the coordinator directly
+- Handle a single unit of work the coordinator already understands — that stays with the coordinator directly
 - Replace OFD: a single worker stream is itself an OFD run; ATOM is the layer above that distributes streams
 - Implement the dashboard's native PM-agent feature (Plane B) — this skill governs interactive sessions only
 
 ## When it triggers
 
-The global rule is the trigger: **delegate when >1 tool call; the coordinator stays a lean PM.** Any time work decomposes into multiple independently executable streams — code, docs, analysis, or mixed — load this skill and choose a topology before dispatching.
+The global rule is the trigger: **delegate when the work splits into independent units, produces long output (full test run, wide search), or needs an independent reviewer. A single unit the coordinator already understands stays with the coordinator.** In this mode the coordinator does not edit code; it stays a lean PM. Any time work decomposes into multiple independently executable streams — code, docs, analysis, or mixed — load this skill and choose a topology before dispatching.
 
 ## Examples
 
@@ -78,7 +78,7 @@ flowchart TD
 | Multiple **independent** features/tasks (no file overlap, no dependency) | One worktree+branch each, parallel → **one PR each** |
 | **One** feature split into **file-disjoint** subtasks | One worktree each, parallel → PM merges branches → **one PR** |
 | One feature, shared files / tight coupling | **Sequential, single worktree** (this is OFD) |
-| Trivial (≤1 tool call) | PM solo — no worktrees, no fan-out |
+| Single unit the PM already understands | PM solo — no worktrees, no fan-out |
 
 Worktrees are always created manually off `main` — never via the `Agent` `isolation:'worktree'` flag, so the PM controls the base ref and dependency state of each stream.
 
