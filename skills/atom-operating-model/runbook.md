@@ -6,7 +6,7 @@ Operational checklist for the main-thread PM. Covers topology decision, worktree
 
 ## 0. Pre-flight
 
-- [ ] Confirm this is a **non-trivial task** (>1 tool call). Trivial tasks stay with the PM directly.
+- [ ] Confirm the work splits into independent units, produces long output, or needs an independent reviewer. A single unit the PM already understands stays with the PM.
 - [ ] Confirm you are running in an **interactive Claude Code session** (not a headless/spawned agent). Background mesh requires a reliably re-woken main loop; spawned agents must use the synchronous subset only.
 - [ ] Read the task scope and identify all files that will be touched.
 
@@ -21,7 +21,7 @@ Choose the topology before any worktree is created.
 | Multiple independent features/tasks — no file overlap, no dependency | One worktree + branch each, parallel → one PR per stream |
 | One feature split into file-disjoint subtasks | One worktree per subtask, parallel → PM merges branches → one PR |
 | One feature with shared files / tight coupling | Sequential, single worktree (OFD) |
-| Trivial (≤1 tool call) | PM solo, no worktree |
+| Single unit the PM already understands | PM solo, no worktree |
 
 **Integration follows the topology rule:** independent streams each get their own PR; a disjoint-split ends with the PM merging branches into one PR; shared-file streams run sequentially in a single worktree.
 
