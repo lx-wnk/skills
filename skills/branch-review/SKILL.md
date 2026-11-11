@@ -245,7 +245,7 @@ Flags: `--no-simplify` disables the Simplify Pass (see below). Without `--apply-
 
 ### Fix-Phase Execution Order
 
-F1. Preconditions above (incl. test/lint command detection). F2. **Baseline gate** — run the detected test + lint command once; record green/red as the baseline (see Test/Lint Gate). F3. Fix classification (below). F4. Confident-fix workflow (below) — commit per fix. F5. Design-decision escalation (below) — user picks, implement, commit. Push is deferred to step F8. F6. **Simplify pass** (below) — edits land uncommitted. F7. **Final gate** — apply the Test/Lint Gate decision matrix below; do not act on this summary line alone. F8. **Push** — only on a green final gate or explicit user approval; never to a default branch. F9. Extend the **Auto-Fix Summary** in `Findings.md`.
+F1. Preconditions above (incl. test/lint command detection). F2. **Baseline gate** — run the detected test + lint command once; record green/red as the baseline (see Test/Lint Gate). F3. Fix classification (below). F4. Confident-fix workflow (below) — commit per fix, then **fix-delta review** (below) of the F4 commits. F5. Design-decision escalation (below) — user picks, implement, commit, then **fix-delta review** of the F5 commits. Push is deferred to step F8. F6. **Simplify pass** (below) — edits land uncommitted. F7. **Final gate** — apply the Test/Lint Gate decision matrix below; do not act on this summary line alone. F8. **Push** — only on a green final gate or explicit user approval; never to a default branch. F9. Extend the **Auto-Fix Summary** in `Findings.md`.
 
 ### Fix Classification
 
@@ -291,6 +291,15 @@ Recommendation: <A | B | C> — <one-sentence justification>
 At the end: "Which options should I implement? (e.g. 1.B, 2.A, 3.C)"
 
 After the user's reply: implement the options, one commit per affected concern. Push follows the gated Push Strategy (step F8) — after the Simplify Pass and final gate, never immediately here.
+
+### Fix-Delta Review
+
+Runs after each fix round (end of F4, end of F5), before the next step. A fix can introduce a regression that the full review never saw, so review only what the round changed.
+
+1. **Scope** — record the HEAD SHA before the round; after it, review `git diff <pre-round-sha>..HEAD` only. Not the whole branch diff.
+2. **Check** — for every hunk: destructive paths (delete, overwrite, migration, cache/state reset), state transitions (status flags, lifecycle order, retries), and changed behaviour beyond the finding the fix targets.
+3. **Outcome** — a regression with an unambiguous correction → patch as a confident fix (`fix(<area>): <one-line> [F-NNN delta]`) and repeat this review on that commit. Anything else → Design Decision; do not revert silently.
+4. **Record** — log the round, the reviewed range and the result in the Auto-Fix Summary.
 
 ### Simplify Pass (`/simplify`)
 
@@ -354,6 +363,7 @@ After the auto-fix phase, append a new section `## Auto-Fix Summary` to `Finding
 - Design decisions for escalation: N (with finding IDs)
 - Out-of-scope findings: N (with finding IDs and reason)
 - Discarded hypotheses (not reproducible on branch): N (with finding IDs)
+- Fix-delta reviews: per round `<F4|F5> <sha>..<sha> → clean | N regressions (finding IDs)`
 - Gate result: `baseline <green|red> → final <green|red>` + the test/lint command used (or `no gate available`). When the baseline is red, also report the failing-test counts: `baseline red (N failing) → final <green|red> (M failing)`.
 - Simplify status: `applied (N edits, <sha>)` | `skipped: not available` | `skipped: --no-simplify` | `skipped: baseline red` | `discarded: broke tests` | `retained: innocent (gate red from functional fixes)` | `applied ungated (no gate available)`
 
