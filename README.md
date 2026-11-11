@@ -67,6 +67,12 @@ Prefer to be explicit? Every skill is also a slash command: `/branch-review`.
 | [agent-context-update](skills/agent-context-update/SKILL.md) | Update Agent-Context to the latest version — refreshes shared files, preserves project config | `/agent-context-update [version]` |
 | [atom-operating-model](skills/atom-operating-model/SKILL.md) | Agent-team operating model — coordinating PM fans out isolated worker agents across git worktrees | `/atom-operating-model [tasks to coordinate]` |
 
+**Frontend**
+
+| Skill | Description | Invoke |
+| --- | --- | --- |
+| [ui-motion](skills/ui-motion/SKILL.md) | UI animation rules — easing, timing, press feedback, popovers, crossfades, `prefers-reduced-motion`; values are unverified heuristics | `/ui-motion [component or interaction to animate]` |
+
 **Knowledge & Deliverables**
 
 | Skill | Description | Invoke |
